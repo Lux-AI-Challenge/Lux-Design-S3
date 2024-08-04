@@ -1,6 +1,7 @@
-from typing import Any, Dict, Tuple, Union
+import functools
+from typing import Any, Dict, Optional, Tuple, Union
 import gymnax
-from gymnax.environments import environment
+from gymnax.environments import environment, spaces
 import chex
 from flax import struct
 import jax
@@ -53,13 +54,45 @@ class LuxAIS3Env(environment.Environment):
 
         return self.get_obs(state), state
     
+    @functools.partial(jax.jit, static_argnums=(0,))
+    def step(
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: Optional[EnvParams] = None,
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+        """Performs step transitions in the environment."""
+        # Use default env parameters if no others specified
+        if params is None:
+            params = self.default_params
+        key, key_reset = jax.random.split(key)
+        obs_st, state_st, reward, terminated, truncated, info = self.step_env(key, state, action, params)
+        obs_re, state_re = self.reset_env(key_reset, params)
+        # Auto-reset environment based on done
+        done = terminated | truncated
+        state = jax.tree_map(
+            lambda x, y: jax.lax.select(done, x, y), state_re, state_st
+        )
+        info["final_observation"] = obs_st
+        obs = jax.lax.select(done, obs_re, obs_st)
+        return obs, state, reward, terminated, truncated, info
+
+    @functools.partial(jax.jit, static_argnums=(0,))
+    def reset(
+        self, key: chex.PRNGKey, params: Optional[EnvParams] = None
+    ) -> Tuple[chex.Array, EnvState]:
+        """Performs resetting of environment."""
+        # Use default env parameters if no others specified
+        if params is None:
+            params = self.default_params
+        obs, state = self.reset_env(key, params)
+        return obs, state
+    
     def get_obs(self, state: EnvState, params=None, key=None) -> chex.Array:
         """Return observation from raw state trafo."""
-        obs_end = jnp.zeros(shape=(self.size, self.size), dtype=jnp.float32)
-        end_cond = state.row >= self.size
-        obs_upd = obs_end.at[state.row, state.column].set(1.0)
-        return jax.lax.select(end_cond, obs_end, obs_upd)
-
+        obs = jnp.zeros(shape=(3, 3, 2), dtype=jnp.float32)
+        return obs
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal. This occurs when either team wins/loses outright."""
         terminated = jnp.array(False)
@@ -77,12 +110,12 @@ class LuxAIS3Env(environment.Environment):
 
     def action_space(self, params: EnvParams):
         """Action space of the environment."""
-        raise NotImplementedError
+        return spaces.Discrete(10)
 
     def observation_space(self, params: EnvParams):
         """Observation space of the environment."""
-        raise NotImplementedError
+        return spaces.Discrete(10)
 
     def state_space(self, params: EnvParams):
         """State space of the environment."""
-        raise NotImplementedError
+        return spaces.Discrete(10)

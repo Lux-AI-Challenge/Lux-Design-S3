@@ -10,6 +10,6 @@ setup(
     ],
     author="Lux AI Challenge",
     description="Lux AI Challenge Season 3 environment code",
-    long_description=open("README.md").read(),
+    long_description=open("../README.md").read(),
     long_description_content_type="text/markdown",
 )
