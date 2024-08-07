@@ -12,11 +12,13 @@ from jax import lax
 from luxai_s3.params import EnvParams
 from luxai_s3.spaces import MultiDiscrete
 from luxai_s3.state import EnvObs, EnvState, gen_state
+from luxai_s3.pygame_render import LuxAIPygameRenderer
 
 
 class LuxAIS3Env(environment.Environment):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.renderer = LuxAIPygameRenderer()
 
     @property
     def default_params(self) -> EnvParams:
@@ -152,163 +154,7 @@ class LuxAIS3Env(environment.Environment):
         return "Lux AI Season 3"
 
     def render(self, state: EnvState, params: EnvParams):
-        """Render the environment."""
-        import pygame
-
-        tile_size = 64
-
-        # Initialize Pygame if not already done
-        if not pygame.get_init():
-            pygame.init()
-
-            # Set up the display
-            screen_width = params.map_width * tile_size
-            screen_height = params.map_height * tile_size
-            self.screen = pygame.display.set_mode((screen_width, screen_height))
-            self.surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
-            pygame.display.set_caption("Lux AI Season 3")
-
-            self.display_options = {
-                "show_grid": True,
-                "show_relic_spots": True,
-            }
-
-        # Fill the screen with a background color
-        self.screen.fill((200, 200, 200))
-        self.surface.fill((200, 200, 200, 255))  # Light gray background
-
-        # Draw the grid of tiles
-        for x in range(params.map_width):
-            for y in range(params.map_height):
-                rect = pygame.Rect(x * tile_size, y * tile_size, tile_size, tile_size)
-                tile_type = state.map_features[y, x, 0]
-                if tile_type == 1:
-                    color = (166, 177, 225, 255)  # Light blue (a6b1e1) for tile type 1
-                else:
-                    color = (255, 255, 255, 255)  # White for other tile types
-                pygame.draw.rect(self.surface, color, rect)  # Draw filled squares
-
-        # Draw relic node configs if display option is enabled
-        def draw_rect_alpha(surface, color, rect):
-            shape_surf = pygame.Surface(pygame.Rect(rect).size, pygame.SRCALPHA)
-            pygame.draw.rect(shape_surf, color, shape_surf.get_rect())
-            surface.blit(shape_surf, rect)
-        if self.display_options["show_relic_spots"]:
-            for i in range(params.max_relic_nodes):
-                if state.relic_nodes_mask[i]:
-                    x, y = state.relic_nodes[i, :2]
-                    config_size = params.relic_config_size
-                    half_size = config_size // 2
-                    for dx in range(-half_size, half_size + 1):
-                        for dy in range(-half_size, half_size + 1):
-                            config_x = x + dx
-                            config_y = y + dy
-                            
-                            if (0 <= config_x < params.map_width and 
-                                0 <= config_y < params.map_height):
-                                
-                                config_value = state.relic_node_configs[i, 
-                                    dy + half_size, dx + half_size]
-                                
-                                if config_value > 0 :
-                                    rect = pygame.Rect(
-                                        config_x * tile_size, 
-                                        config_y * tile_size, 
-                                        tile_size, 
-                                        tile_size
-                                    )
-                                    draw_rect_alpha(self.surface, (255, 215, 0, 50), rect)  # Semi-transparent gold
-
-        # Draw energy nodes
-        for i in range(params.max_energy_nodes):
-            if state.energy_nodes_mask[i]:
-                x, y = state.energy_nodes[i, :2]
-                center_x = (x + 0.5) * tile_size
-                center_y = (y + 0.5) * tile_size
-                radius = (
-                    tile_size // 4
-                )  # Adjust this value to change the size of the circle
-                pygame.draw.circle(
-                    self.surface, (0, 255, 0, 255), (int(center_x), int(center_y)), radius
-                )
-        # Draw relic nodes
-        for i in range(params.max_relic_nodes):
-            if state.relic_nodes_mask[i]:
-                x, y = state.relic_nodes[i, :2]
-                rect_size = tile_size // 2  # Make the square smaller than the tile
-                rect_x = x * tile_size + (tile_size - rect_size) // 2
-                rect_y = y * tile_size + (tile_size - rect_size) // 2
-                rect = pygame.Rect(rect_x, rect_y, rect_size, rect_size)
-                pygame.draw.rect(self.surface, (173, 151, 32, 255), rect)  # Light blue color
-
-       
-
-
-        # Draw units
-        for team in range(2):
-            for i in range(params.max_units):
-                if state.units_mask[team, i]:
-                    x, y = state.units[team, i, :2]
-                    center_x = (x + 0.5) * tile_size
-                    center_y = (y + 0.5) * tile_size
-                    radius = (
-                        tile_size // 3
-                    )  # Adjust this value to change the size of the circle
-                    color = (
-                        (255, 0, 0, 255) if team == 0 else (0, 0, 255, 255)
-                    )  # Red for team 0, Blue for team 1
-                    pygame.draw.circle(
-                        self.surface, color, (int(center_x), int(center_y)), radius
-                    )
-        # Draw unit counts
-        unit_counts = {}
-        for team in range(2):
-            for i in range(params.max_units):
-                if state.units_mask[team, i]:
-                    x, y = np.array(state.units[team, i, :2])
-                    pos = (x, y)
-                    if pos not in unit_counts:
-                        unit_counts[pos] = 0
-                    unit_counts[pos] += 1
-
-        font = pygame.font.Font(None, 32)  # You may need to adjust the font size
-        for pos, count in unit_counts.items():
-            if count >= 1:
-                x, y = pos
-                text = font.render(str(count), True, (255, 255, 255))  # White text
-                text_rect = text.get_rect(
-                    center=((x + 0.5) * tile_size, (y + 0.5) * tile_size)
-                )
-                self.surface.blit(text, text_rect)
-
-        # Draw the grid lines
-        for x in range(params.map_width + 1):
-            pygame.draw.line(
-                self.surface,
-                (100, 100, 100),
-                (x * tile_size, 0),
-                (x * tile_size, params.map_height * tile_size),
-            )
-        for y in range(params.map_height + 1):
-            pygame.draw.line(
-                self.surface,
-                (100, 100, 100),
-                (0, y * tile_size),
-                (params.map_width * tile_size, y * tile_size),
-            )
-
-        
-        self.screen.blit(self.surface, (0, 0))
-        # Update the display
-        pygame.display.flip()
-
-        # # Handle events to keep the window responsive
-        # for event in pygame.event.get():
-        #     if event.type == pygame.TEXTINPUT and event.text == " ":
-        #         while True:
-        #             for event in pygame.event.get():
-        #                 if event.type == pygame.TEXTINPUT and event.text == " ":
-        #                     break
+        self.renderer.render(state, params)
 
     def action_space(self, params: EnvParams):
         """Action space of the environment."""
