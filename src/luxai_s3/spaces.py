@@ -1,8 +1,10 @@
-from gymnax.environments.spaces import Space
-import jax.numpy as jnp
 import chex
 import jax
+import jax.numpy as jnp
 import numpy as np
+from gymnax.environments.spaces import Space
+
+
 class MultiDiscrete(Space):
     """Minimal jittable class for multi discrete gymnax spaces."""
 
@@ -13,7 +15,9 @@ class MultiDiscrete(Space):
         self.dtype = jnp.int16
 
     def sample(self, rng: chex.PRNGKey) -> chex.Array:
-        return (jax.random.uniform(rng, shape=(self.n, ), minval=0, maxval=1) * self.nvec).astype(self.dtype)
+        return (
+            jax.random.uniform(rng, shape=(self.n,), minval=0, maxval=1) * self.nvec
+        ).astype(self.dtype)
 
     def contains(self, x: jnp.int_) -> jnp.ndarray:
         """Check whether specific object is within space."""

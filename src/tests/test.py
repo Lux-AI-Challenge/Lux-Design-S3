@@ -1,10 +1,10 @@
 from luxai_s3.params import EnvParams
 
-
 if __name__ == "__main__":
-    from luxai_s3.env import LuxAIS3Env
     import jax
     import jax.numpy as jnp
+
+    from luxai_s3.env import LuxAIS3Env
 
     # Create the environment
     env = LuxAIS3Env()
@@ -22,8 +22,9 @@ if __name__ == "__main__":
     action = env.action_space(env_params).sample(subkey)
     # Step the environment
     key, subkey = jax.random.split(key)
-    obs, state, reward, terminated, truncated, info = env.step(subkey, state, action, params=env_params)
-
+    obs, state, reward, terminated, truncated, info = env.step(
+        subkey, state, action, params=env_params
+    )
 
     print("Observation:", obs)
     print("Reward:", reward)
@@ -35,5 +36,7 @@ if __name__ == "__main__":
         key, subkey = jax.random.split(key)
         action = env.action_space(env_params).sample(subkey)
         # import ipdb;ipdb.set_trace()
-        obs, state, reward, terminated, truncated, info = env.step(subkey, state, action, params=env_params)
+        obs, state, reward, terminated, truncated, info = env.step(
+            subkey, state, action, params=env_params
+        )
         env.render(state, env_params)
