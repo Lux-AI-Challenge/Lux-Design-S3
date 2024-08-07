@@ -20,10 +20,10 @@ if __name__ == "__main__":
     # Take a random action
     key, subkey = jax.random.split(key)
     action = env.action_space(env_params).sample(subkey)
-
     # Step the environment
     key, subkey = jax.random.split(key)
     obs, state, reward, terminated, truncated, info = env.step(subkey, state, action, params=env_params)
+
 
     print("Observation:", obs)
     print("Reward:", reward)
@@ -36,4 +36,4 @@ if __name__ == "__main__":
         action = env.action_space(env_params).sample(subkey)
         # import ipdb;ipdb.set_trace()
         obs, state, reward, terminated, truncated, info = env.step(subkey, state, action, params=env_params)
-        # env.render(state, env_params)
+        env.render(state, env_params)

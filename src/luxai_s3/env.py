@@ -38,15 +38,15 @@ class LuxAIS3Env(environment.Environment):
             [1, 0],  # Move right
             [0, 1],  # Move down
             [-1, 0]  # Move left
-        ])
+        ], dtype=jnp.int16)
 
         def move_unit(unit, action, mask):
             new_pos = unit[:2] + directions[action]
             # Ensure the new position is within the map boundaries
-            new_pos = jnp.clip(new_pos, 0, jnp.array([params.map_width - 1, params.map_height - 1]))
+            new_pos = jnp.clip(new_pos, 0, jnp.array([params.map_width - 1, params.map_height - 1], dtype=jnp.int16))
             # Update the unit's position only if it's active
             return jnp.where(mask, jnp.concatenate([new_pos, unit[2:]]), unit)
-
+    
         # Move units for both teams
         for team in range(2):
             state = state.replace(units=state.units.at[team].set(
@@ -56,7 +56,7 @@ class LuxAIS3Env(environment.Environment):
                     state.units_mask[team]
                 )
             ))
-
+    
         # Update state's step count
         state = state.replace(steps=state.steps + 1)
 
@@ -94,6 +94,7 @@ class LuxAIS3Env(environment.Environment):
         if params is None:
             params = self.default_params
         key, key_reset = jax.random.split(key)
+
         obs_st, state_st, reward, terminated, truncated, info = self.step_env(key, state, action, params)
         obs_re, state_re = self.reset_env(key_reset, params)
         # Auto-reset environment based on done
@@ -105,7 +106,7 @@ class LuxAIS3Env(environment.Environment):
         obs = jax.lax.select(done, obs_re, obs_st)
         return obs, state, reward, terminated, truncated, info
 
-    @functools.partial(jax.jit, static_argnums=(0, 2))
+    # @functools.partial(jax.jit, static_argnums=(0, 2))
     def reset(
         self, key: chex.PRNGKey, params: Optional[EnvParams] = None
     ) -> Tuple[chex.Array, EnvState]:
@@ -116,7 +117,7 @@ class LuxAIS3Env(environment.Environment):
         obs, state = self.reset_env(key, params)
         return obs, state
     
-    @functools.partial(jax.jit, static_argnums=(0, 2))
+    # @functools.partial(jax.jit, static_argnums=(0, 2))
     def get_obs(self, state: EnvState, params=None, key=None) -> EnvObs:
         """Return observation from raw state, handling partial observability."""
         obs = jnp.zeros(shape=(3, 3, 2), dtype=jnp.float32)
@@ -227,13 +228,12 @@ class LuxAIS3Env(environment.Environment):
         pygame.display.flip()
 
         # # Handle events to keep the window responsive
-        for event in pygame.event.get():
-            print(event)
-            if event.type == pygame.TEXTINPUT and event.text == " ":
-                while True:
-                    for event in pygame.event.get():
-                        if event.type == pygame.TEXTINPUT and event.text == " ":
-                            break
+        # for event in pygame.event.get():
+        #     if event.type == pygame.TEXTINPUT and event.text == " ":
+        #         while True:
+        #             for event in pygame.event.get():
+        #                 if event.type == pygame.TEXTINPUT and event.text == " ":
+        #                     break
 
     def action_space(self, params: EnvParams):
         """Action space of the environment."""

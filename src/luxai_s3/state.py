@@ -96,21 +96,20 @@ def gen_map(params: EnvParams) -> chex.Array:
         
         map_features = map_features.at[11, 11, 0].set(1)
         map_features = map_features.at[11, 12, 0].set(1)
-        energy_nodes = energy_nodes.at[0, :].set([4, 4])
+        energy_nodes = energy_nodes.at[0, :].set(jnp.array([4, 4], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[0].set(1)
-        energy_nodes = energy_nodes.at[1, :].set([11, 11])
+        energy_nodes = energy_nodes.at[1, :].set(jnp.array([11, 11], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[1].set(1)
 
 
-        relic_nodes = relic_nodes.at[0, :].set([1, 1, 0])
+        relic_nodes = relic_nodes.at[0, :].set(jnp.array([1, 1, 0], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[0].set(1)
-        relic_nodes = relic_nodes.at[1, :].set([1, 4, 1])
+        relic_nodes = relic_nodes.at[1, :].set(jnp.array([1, 4, 1], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[1].set(1)
-        relic_nodes = relic_nodes.at[2, :].set([14, 11, 0])
+        relic_nodes = relic_nodes.at[2, :].set(jnp.array([14, 11, 0], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[2].set(1)
-        relic_nodes = relic_nodes.at[3, :].set([14, 14, 1])
+        relic_nodes = relic_nodes.at[3, :].set(jnp.array([14, 14, 1], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[3].set(1)
 
         
     return dict(map_features=map_features, energy_nodes=energy_nodes, relic_nodes=relic_nodes, energy_nodes_mask=energy_nodes_mask, relic_nodes_mask=relic_nodes_mask)
-    # return dict(map_features=map_features, energy_nodes=energy_nodes, relic_nodes=relic_nodes, energy_nodes_mask=energy_nodes_mask, relic_nodes_mask=relic_nodes_mask)
