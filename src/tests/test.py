@@ -34,6 +34,6 @@ if __name__ == "__main__":
     while True:
         key, subkey = jax.random.split(key)
         action = env.action_space(env_params).sample(subkey)
-        import ipdb;ipdb.set_trace()
+        # import ipdb;ipdb.set_trace()
         obs, state, reward, terminated, truncated, info = env.step(subkey, state, action, params=env_params)
         # env.render(state, env_params)

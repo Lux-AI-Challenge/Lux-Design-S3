@@ -103,7 +103,7 @@ class LuxAIS3Env(environment.Environment):
         )
         info["final_observation"] = obs_st
         obs = jax.lax.select(done, obs_re, obs_st)
-        return None, None, None, None, None, None
+        return obs, state, reward, terminated, truncated, info
 
     @functools.partial(jax.jit, static_argnums=(0, 2))
     def reset(
