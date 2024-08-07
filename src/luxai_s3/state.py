@@ -9,12 +9,12 @@ from luxai_s3.params import EnvParams
 @struct.dataclass
 class EnvState:
     units: chex.Array
-    """Units in the environment with shape (2, N, 3) for 2 teams, N max units, and 3 features.
+    """Units in the environment with shape (T, N, 3) for T teams, N max units, and 3 features.
 
-    3 features are for position (x, y), TODO (stao):
+    3 features are for position (x, y), and energy
     """
     units_mask: chex.Array
-    """Mask of units in the environment with shape (2, N) for 2 teams, N max units"""
+    """Mask of units in the environment with shape (T, N) for T teams, N max units"""
     energy_nodes: chex.Array
     """Energy nodes in the environment with shape (N, 2) for N max energy nodes, and 2 features.
 
@@ -30,14 +30,19 @@ class EnvState:
     relic_node_configs: chex.Array
     """Relic node configs in the environment with shape (N, K, K) for N max relic nodes and a KxK relic configuration"""
     relic_nodes_mask: chex.Array
-    """Mask of relic nodes in the environment with shape (2, N) for 2 teams, N max relic nodes"""
+    """Mask of relic nodes in the environment with shape (T, N) for T teams, N max relic nodes"""
+    relic_nodes_map_weights: chex.Array
+    """Map of relic nodes in the environment with shape (H, W) for H height, W width. True if a relic node is present, False otherwise. This is generated from other state"""
 
     map_features: chex.Array
     """Map features in the environment with shape (H, W, 2) for H height, W width, TODO (stao):
     """
 
+    sensor_mask: chex.Array
+    """Sensor mask in the environment with shape (T, H, W) for T teams, H height, W width. This is generated from other state"""
+
     team_points: chex.Array
-    """Team points in the environment with shape (2) for 2 teams"""
+    """Team points in the environment with shape (T) for T teams"""
 
     steps: int = 0
 
@@ -48,7 +53,7 @@ class EnvObs:
 
     units: chex.Array
     units_mask: chex.Array
-    """Mask of units in the environment with shape (2, N) for 2 teams, N max units"""
+    """Mask of units in the environment with shape (T, N) for T teams, N max units"""
 
 
 def state_to_flat_obs(state: EnvState) -> chex.Array:
@@ -61,24 +66,50 @@ def flat_obs_to_state(flat_obs: chex.Array) -> EnvState:
 
 def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
     generated = gen_map(key, params)
+    relic_nodes_map_weights = jnp.zeros(shape=(params.map_height, params.map_width), dtype=jnp.int16)
+    # TODO (this could be optimized better)
+    def update_relic_node(relic_nodes_map_weights, relic_data):
+        relic_node, relic_node_config, mask = relic_data
+        start_y = relic_node[1] - params.relic_config_size // 2
+        start_x = relic_node[0] - params.relic_config_size // 2
+        for dy in range(params.relic_config_size):
+            for dx in range(params.relic_config_size):
+                y, x = start_y + dy, start_x + dx
+                valid_pos = jnp.logical_and(
+                    jnp.logical_and(y >= 0, x >= 0),
+                    jnp.logical_and(y < params.map_height, x < params.map_width)
+                )
+                relic_nodes_map_weights = jnp.where(
+                    valid_pos & mask,
+                    relic_nodes_map_weights.at[y, x].add(relic_node_config[dy, dx]),
+                    relic_nodes_map_weights
+                )
+        return relic_nodes_map_weights, None
+    relic_nodes_map_weights, _ = jax.lax.scan(
+        update_relic_node,
+        relic_nodes_map_weights,
+        (generated["relic_nodes"], generated["relic_node_configs"], generated["relic_nodes_mask"])
+    )
     state = EnvState(
-        units=jnp.zeros(shape=(2, params.max_units, 3), dtype=jnp.int16),
-        units_mask=jnp.zeros(shape=(2, params.max_units), dtype=jnp.int16),
-        team_points=jnp.zeros(shape=(2), dtype=jnp.int16),
+        units=jnp.zeros(shape=(params.num_teams, params.max_units, 3), dtype=jnp.int16),
+        units_mask=jnp.zeros(shape=(params.num_teams, params.max_units), dtype=jnp.bool),
+        team_points=jnp.zeros(shape=(params.num_teams), dtype=jnp.int32),
         energy_nodes=generated["energy_nodes"],
         energy_nodes_mask=generated["energy_nodes_mask"],
         relic_nodes=generated["relic_nodes"],
         relic_nodes_mask=generated["relic_nodes_mask"],
         relic_node_configs=generated["relic_node_configs"],
+        relic_nodes_map_weights=relic_nodes_map_weights,
+        sensor_mask=jnp.zeros(shape=(params.num_teams, params.map_height, params.map_width), dtype=jnp.bool),
         map_features=generated["map_features"],
     )
 
     state = spawn_unit(state, 0, 0, [0, 0])
     state = spawn_unit(state, 0, 1, [0, 0])
-    state = spawn_unit(state, 0, 2, [0, 0])
+    # state = spawn_unit(state, 0, 2, [0, 0])
     state = spawn_unit(state, 1, 0, [15, 15])
     state = spawn_unit(state, 1, 1, [15, 15])
-    state = spawn_unit(state, 1, 2, [15, 15])
+    # state = spawn_unit(state, 1, 2, [15, 15])
     return state
 
 
@@ -109,6 +140,12 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         map_features = map_features.at[9:12, 5:6, 0].set(1)
         map_features = map_features.at[14:, 12:15, 0].set(1)
 
+        map_features = map_features.at[12:15, 8:10, 0].set(2)
+        map_features = map_features.at[1:4, 6:8, 0].set(2)
+
+        map_features = map_features.at[11:12, 3:6].set(2)
+        map_features = map_features.at[4:5, 10:13, 0].set(2)
+
         map_features = map_features.at[11, 11, 0].set(1)
         map_features = map_features.at[11, 12, 0].set(1)
         energy_nodes = energy_nodes.at[0, :].set(jnp.array([4, 4], dtype=jnp.int16))
@@ -118,11 +155,11 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
 
         relic_nodes = relic_nodes.at[0, :].set(jnp.array([1, 1], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[0].set(1)
-        relic_nodes = relic_nodes.at[1, :].set(jnp.array([1, 4], dtype=jnp.int16))
+        relic_nodes = relic_nodes.at[1, :].set(jnp.array([2, 13], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[1].set(1)
-        relic_nodes = relic_nodes.at[2, :].set(jnp.array([14, 11], dtype=jnp.int16))
+        relic_nodes = relic_nodes.at[2, :].set(jnp.array([14, 14], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[2].set(1)
-        relic_nodes = relic_nodes.at[3, :].set(jnp.array([14, 14], dtype=jnp.int16))
+        relic_nodes = relic_nodes.at[3, :].set(jnp.array([13, 2], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[3].set(1)
 
         relic_node_configs = jax.random.randint(

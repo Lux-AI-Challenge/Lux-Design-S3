@@ -24,6 +24,7 @@ class LuxAIPygameRenderer:
             self.display_options = {
                 "show_grid": True,
                 "show_relic_spots": True,
+                "show_sensor_mask": True,
             }
 
         
@@ -41,6 +42,8 @@ class LuxAIPygameRenderer:
                             render_state = "running"
                     elif event.text == "r":
                         self.display_options["show_relic_spots"] = not self.display_options["show_relic_spots"]
+                    elif event.text == "s":
+                        self.display_options["show_sensor_mask"] = not self.display_options["show_sensor_mask"]
             else:
                 if render_state == "paused":
                     self.clock.tick(60)
@@ -58,6 +61,8 @@ class LuxAIPygameRenderer:
                 tile_type = state.map_features[y, x, 0]
                 if tile_type == 1:
                     color = (166, 177, 225, 255)  # Light blue (a6b1e1) for tile type 1
+                elif tile_type == 2:
+                    color = (51, 56, 68, 255)
                 else:
                     color = (255, 255, 255, 255)  # White for other tile types
                 pygame.draw.rect(self.surface, color, rect)  # Draw filled squares
@@ -115,7 +120,13 @@ class LuxAIPygameRenderer:
                 rect = pygame.Rect(rect_x, rect_y, rect_size, rect_size)
                 pygame.draw.rect(self.surface, (173, 151, 32, 255), rect)  # Light blue color
 
-       
+        # Draw sensor mask
+        if self.display_options["show_sensor_mask"]:
+            for team in range(params.num_teams):
+                for x in range(params.map_width):
+                    for y in range(params.map_height):
+                        if state.sensor_mask[team, y, x]:
+                            draw_rect_alpha(self.surface, (255, 0, 0, 25), pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
 
         # Draw units
