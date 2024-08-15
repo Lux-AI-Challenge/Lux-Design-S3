@@ -33,7 +33,7 @@ class LuxAIS3Env(environment.Environment):
         params: EnvParams,
     ) -> Tuple[EnvObs, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         # state = state.replace() # TODO (stao)
-        action = jnp.stack([action["team_0"], action["team_1"]]) * 0 + 1
+        action = jnp.stack([action["team_0"], action["team_1"]])
         ### process unit movement ###
         # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left
         # Define movement directions
@@ -85,9 +85,11 @@ class LuxAIS3Env(environment.Environment):
         distances_to_nodes = jax.vmap(lambda pos: jnp.linalg.norm(mm - pos, axis=-1))(state.energy_nodes)
         def compute_energy_field(node_fn_spec, distances_to_node, mask):
             fn_i, x, y, z = node_fn_spec
-            return jnp.where(mask, lax.switch(fn_i, ENERGY_NODE_FNS, distances_to_node, x, y, z), jnp.zeros_like(distances_to_node))
+            return jnp.where(mask, lax.switch(fn_i.astype(jnp.int16), ENERGY_NODE_FNS, distances_to_node, x, y, z), jnp.zeros_like(distances_to_node))
         energy_field = jax.vmap(compute_energy_field)(state.energy_node_fns, distances_to_nodes, state.energy_nodes_mask)
+        energy_field = jnp.where(energy_field.mean() < .25, energy_field + (.25 - energy_field.mean()), energy_field)
         energy_field = jnp.round(energy_field.sum(0))
+        energy_field = jnp.clip(energy_field, params.min_energy_per_tile, params.max_energy_per_tile)
         state = state.replace(energy_field=energy_field)
 
         # Update unit energy based on the energy field of their current position

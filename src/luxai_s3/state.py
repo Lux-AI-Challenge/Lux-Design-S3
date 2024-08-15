@@ -212,13 +212,13 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         energy_nodes_mask = energy_nodes_mask.at[1].set(1)
         energy_node_fns = jnp.array(
             [
-                [0, 1, 0, 4],
+                [0, 1.2, 1, 4],
                 # [1, 4, 0, 2],
-                [0, 1, 0, 4],
+                [0, 1.2, 1, 4],
                 # [1, 4, 0, 0]
             ]
         )
-        energy_node_fns = jnp.concat([energy_node_fns, jnp.zeros((params.max_energy_nodes - 2, 4), dtype=jnp.int16)], axis=0)
+        energy_node_fns = jnp.concat([energy_node_fns, jnp.zeros((params.max_energy_nodes - 2, 4), dtype=jnp.float32)], axis=0)
 
         relic_nodes = relic_nodes.at[0, :].set(jnp.array([1, 1], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[0].set(1)
