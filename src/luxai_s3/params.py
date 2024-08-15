@@ -10,9 +10,12 @@ class EnvParams:
     num_teams: int = 2
     max_units: int = 4
     init_unit_energy: int = 10
+    max_unit_energy: int = 400
 
     # configs for energy nodes
     max_energy_nodes: int = 10
+    max_energy_per_tile: int = 100
+    min_energy_per_tile: int = -100
 
 
     max_relic_nodes: int = 10

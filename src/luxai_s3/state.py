@@ -11,9 +11,16 @@ ASTEROID_TILE = 2
 ENERGY_NODE_FNS = [
     lambda d, x, y, z: jnp.sin(d * x + y) * z, lambda d, x, y, z: (x / (d + 1) + y) * z
 ]
+
+@struct.dataclass
+class UnitState:
+    position: chex.Array
+    """Position of the unit with shape (2) for x, y"""
+    energy: int
+    """Energy of the unit"""
 @struct.dataclass
 class EnvState:
-    units: chex.Array
+    units: UnitState
     """Units in the environment with shape (T, N, 3) for T teams, N max units, and 3 features.
 
     3 features are for position (x, y), and energy
@@ -115,7 +122,7 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
         ),
     )
     state = EnvState(
-        units=jnp.zeros(shape=(params.num_teams, params.max_units, 3), dtype=jnp.int16),
+        units=UnitState(position=jnp.zeros(shape=(params.num_teams, params.max_units, 2), dtype=jnp.int16), energy=jnp.zeros(shape=(params.num_teams, params.max_units, 1), dtype=jnp.int16)),
         units_mask=jnp.zeros(
             shape=(params.num_teams, params.max_units), dtype=jnp.bool
         ),
@@ -147,12 +154,16 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
 def spawn_unit(
     state: EnvState, team: int, unit_id: int, position: chex.Array
 ) -> EnvState:
-    state = state.replace(
-        units=state.units.at[team, unit_id, :].set(
-            jnp.array([position[0], position[1], 0], dtype=jnp.int16)
-        )
-    )
-    state = state.replace(units_mask=state.units_mask.at[team, unit_id].set(True))
+    unit_state = state.units
+    unit_state = unit_state.replace(position=unit_state.position.at[team, unit_id, :].set(jnp.array(position, dtype=jnp.int16)))
+    unit_state = unit_state.replace(energy=unit_state.energy.at[team, unit_id, :].set(jnp.array([100], dtype=jnp.int16)))
+    # state = state.replace(
+    #     units
+    #     # units=state.units.at[team, unit_id, :].set(
+    #     #     jnp.array([position[0], position[1], 0], dtype=jnp.int16)
+    #     # )
+    # )
+    state = state.replace(units=unit_state, units_mask=state.units_mask.at[team, unit_id].set(True))
     return state
 
 

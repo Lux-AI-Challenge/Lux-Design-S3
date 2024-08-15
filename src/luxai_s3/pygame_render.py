@@ -166,7 +166,6 @@ class LuxAIPygameRenderer:
                         center=((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
                     )
                     self.surface.blit(text, text_rect)
-                    print(energy_field_value)
                     if energy_field_value > 0:
                         draw_rect_alpha(
                             self.surface,
@@ -186,7 +185,7 @@ class LuxAIPygameRenderer:
         for team in range(2):
             for i in range(params.max_units):
                 if state.units_mask[team, i]:
-                    x, y = state.units[team, i, :2]
+                    x, y = state.units.position[team, i]
                     center_x = (x + 0.5) * TILE_SIZE
                     center_y = (y + 0.5) * TILE_SIZE
                     radius = (
@@ -203,7 +202,7 @@ class LuxAIPygameRenderer:
         for team in range(2):
             for i in range(params.max_units):
                 if state.units_mask[team, i]:
-                    x, y = np.array(state.units[team, i, :2])
+                    x, y = np.array(state.units.position[team, i])
                     pos = (x, y)
                     if pos not in unit_counts:
                         unit_counts[pos] = 0

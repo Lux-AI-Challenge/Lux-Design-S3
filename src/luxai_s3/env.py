@@ -11,7 +11,7 @@ from jax import lax
 
 from luxai_s3.params import EnvParams
 from luxai_s3.spaces import MultiDiscrete
-from luxai_s3.state import ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, gen_state
+from luxai_s3.state import ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, UnitState, gen_state
 from luxai_s3.pygame_render import LuxAIPygameRenderer
 
 
@@ -48,12 +48,12 @@ class LuxAIS3Env(environment.Environment):
             dtype=jnp.int16,
         )
 
-        def move_unit(unit, action, mask):
-            new_pos = unit[:2] + directions[action]
+        def move_unit(unit: UnitState, action, mask):
+            new_pos = unit.position + directions[action]
             # Check if the new position is on a map feature of value 2
             is_blocked = state.map_features[new_pos[1], new_pos[0], 0] == 2
             # If blocked, keep the original position
-            new_pos = jnp.where(is_blocked, unit[:2], new_pos)
+            new_pos = jnp.where(is_blocked, unit.position, new_pos)
             # Ensure the new position is within the map boundaries
             new_pos = jnp.clip(
                 new_pos,
@@ -63,14 +63,17 @@ class LuxAIS3Env(environment.Environment):
                 ),
             )
             # Update the unit's position only if it's active
-            return jnp.where(mask, jnp.concatenate([new_pos, unit[2:]]), unit)
+            # import ipdb; ipdb.set_trace()
+            return UnitState(position=new_pos, energy=unit.energy)
 
         # Move units for both teams
+        # jax.debug.breakpoint()
+        # import ipdb; ipdb.set_trace()
         state = state.replace(
             units=jax.vmap(
-                lambda team_units, team_action, team_mask: jax.vmap(move_unit)(
+                lambda team_units, team_action, team_mask: jax.vmap(move_unit, in_axes=(0, 0, 0))(
                     team_units, team_action, team_mask
-                )
+                ), in_axes=(0, 0, 0)
             )(state.units, action, state.units_mask)
         )
 
@@ -122,7 +125,7 @@ class LuxAIS3Env(environment.Environment):
                 sensor_mask = carry
                 return (
                     update_unit_vision_power_map(
-                        team_units[i, :2], team_mask[i], sensor_mask
+                        team_units.position[i], team_mask[i], sensor_mask
                     ),
                     None,
                 )
