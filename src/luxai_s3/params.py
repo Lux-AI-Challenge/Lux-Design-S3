@@ -10,7 +10,11 @@ class EnvParams:
     num_teams: int = 2
     max_units: int = 4
     init_unit_energy: int = 10
+
+    # configs for energy nodes
     max_energy_nodes: int = 10
+
+
     max_relic_nodes: int = 10
     relic_config_size: int = 5
     fog_of_war: bool = True

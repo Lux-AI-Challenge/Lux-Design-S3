@@ -7,6 +7,10 @@ from luxai_s3.params import EnvParams
 EMPTY_TILE = 0
 NEBULA_TILE = 1
 ASTEROID_TILE = 2
+
+ENERGY_NODE_FNS = [
+    lambda d, x, y, z: jnp.sin(d * x + y) * z, lambda d, x, y, z: (x / (d + 1) + y) * z
+]
 @struct.dataclass
 class EnvState:
     units: chex.Array
@@ -21,6 +25,14 @@ class EnvState:
 
     2 features are for position (x, y)
     """
+    
+    energy_node_fns: chex.Array
+    """Energy node functions for computing the energy field of the map. They describe the function with a sequence of numbers
+    
+    The first number is the function used. The subsequent numbers parameterize the function. The function is applied to distance of map tile to energy node and the function parameters.
+    """
+
+
     energy_nodes_mask: chex.Array
     """Mask of energy nodes in the environment with shape (N) for N max energy nodes"""
     relic_nodes: chex.Array
@@ -107,6 +119,7 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
         ),
         team_points=jnp.zeros(shape=(params.num_teams), dtype=jnp.int32),
         energy_nodes=generated["energy_nodes"],
+        energy_node_fns=generated["energy_node_fns"],
         energy_nodes_mask=generated["energy_nodes_mask"],
         relic_nodes=generated["relic_nodes"],
         relic_nodes_mask=generated["relic_nodes_mask"],
@@ -169,6 +182,13 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         energy_nodes_mask = energy_nodes_mask.at[0].set(1)
         energy_nodes = energy_nodes.at[1, :].set(jnp.array([11, 11], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[1].set(1)
+        energy_node_fns = jnp.array(
+            [
+                [0, 1, 0, 4],
+                [1, 4, 0, 2]
+            ]
+        )
+        energy_node_fns = jnp.concat([energy_node_fns, jnp.zeros((params.max_energy_nodes - 2, 4), dtype=jnp.int16)], axis=0)
 
         relic_nodes = relic_nodes.at[0, :].set(jnp.array([1, 1], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[0].set(1)
@@ -197,6 +217,7 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     return dict(
         map_features=map_features,
         energy_nodes=energy_nodes,
+        energy_node_fns=energy_node_fns,
         relic_nodes=relic_nodes,
         energy_nodes_mask=energy_nodes_mask,
         relic_nodes_mask=relic_nodes_mask,

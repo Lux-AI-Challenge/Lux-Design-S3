@@ -11,7 +11,7 @@ from jax import lax
 
 from luxai_s3.params import EnvParams
 from luxai_s3.spaces import MultiDiscrete
-from luxai_s3.state import NEBULA_TILE, EnvObs, EnvState, gen_state
+from luxai_s3.state import ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, gen_state
 from luxai_s3.pygame_render import LuxAIPygameRenderer
 
 
@@ -95,20 +95,6 @@ class LuxAIS3Env(environment.Environment):
         # Update sensor mask based on the sensor range
         def update_vision_power_map(unit_pos, sensor_mask):
             x, y = unit_pos
-            update = jnp.ones(
-                shape=(
-                    params.unit_sensor_range * 2 + 1,
-                    params.unit_sensor_range * 2 + 1,
-                ),
-                dtype=jnp.int16,
-            )
-            # TODO (stao): add code to compute distance to center of unit to edge of vision
-            # Create a square array with dimensions (2 * sensor_range + 1) x (2 * sensor_range + 1)
-            # each value in the array is equal to distance to the center of the array
-            y, x = jnp.ogrid[-params.unit_sensor_range:params.unit_sensor_range + 1, 
-                             -params.unit_sensor_range:params.unit_sensor_range + 1]
-            distances = jnp.abs(x) + jnp.abs(y)
-            update = jnp.clip(params.unit_sensor_range + 1 - distances, 0, params.unit_sensor_range).astype(jnp.int16)
             update = jnp.ones(shape= (params.unit_sensor_range * 2 + 1, params.unit_sensor_range * 2 + 1), dtype=jnp.int16)
             for i in range(params.unit_sensor_range + 1):
                 update = update.at[i:params.unit_sensor_range * 2 + 1 - i, i:params.unit_sensor_range * 2 + 1 - i].set(i + 1)
@@ -156,6 +142,19 @@ class LuxAIS3Env(environment.Environment):
         
         sensor_mask = vision_power_map > 0
         state = state.replace(sensor_mask=sensor_mask)
+
+
+        """Compute energy field of the map and apply it to the units"""
+        # first compute a array of shape (map_height, map_width, num_energy_nodes) with values equal to the distance of the tile to the energy node
+        mm = jnp.meshgrid(jnp.arange(params.map_width), jnp.arange(params.map_height))
+        mm = jnp.stack([mm[0], mm[1]]).T # mm[x, y] gives [x, y]
+        distances_to_nodes = jax.vmap(lambda pos: jnp.linalg.norm(mm - pos, axis=-1))(state.energy_nodes)
+        def compute_energy_field(node_fn_spec, distances_to_node, mask):
+            fn_i, x, y, z = node_fn_spec
+            return jnp.where(mask, lax.switch(fn_i, ENERGY_NODE_FNS, distances_to_node, x, y, z), jnp.zeros_like(distances_to_node))
+        energy_field = jax.vmap(compute_energy_field)(state.energy_node_fns, distances_to_nodes, state.energy_nodes_mask)
+        energy_field = jnp.round(energy_field.sum(0))
+        import ipdb; ipdb.set_trace()
 
         # Compute relic scores
         def compute_relic_score(unit, relic_nodes_map_weights, mask):
@@ -205,7 +204,7 @@ class LuxAIS3Env(environment.Environment):
 
         return self.get_obs(state, params=params, key=key), state
 
-    @functools.partial(jax.jit, static_argnums=(0,4))
+    # @functools.partial(jax.jit, static_argnums=(0,4))
     def step(
         self,
         key: chex.PRNGKey,
@@ -223,6 +222,7 @@ class LuxAIS3Env(environment.Environment):
             key, state, action, params
         )
         if self.auto_reset:
+            done = terminated | truncated
             obs_re, state_re = self.reset_env(key_reset, params)
             state = jax.tree_map(
                 lambda x, y: jax.lax.select(done, x, y), state_re, state_st

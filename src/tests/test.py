@@ -8,7 +8,7 @@ if __name__ == "__main__":
     from luxai_s3.env import LuxAIS3Env
 
     # Create the environment
-    env = LuxAIS3Env()
+    env = LuxAIS3Env(auto_reset=False)
     env_params = EnvParams(map_type="dev0")
 
     # Initialize a random key
@@ -41,6 +41,6 @@ if __name__ == "__main__":
         obs, state, reward, terminated, truncated, info = env.step(
             subkey, state, action, params=env_params
         )
-        env.render(state, env_params)
+        # env.render(state, env_params)
     etime = time.time()
     print(f"FPS: {N / (etime - stime)}")
