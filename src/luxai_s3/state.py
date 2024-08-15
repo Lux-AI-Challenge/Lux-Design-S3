@@ -4,8 +4,9 @@ import jax.numpy as jnp
 from flax import struct
 
 from luxai_s3.params import EnvParams
-
-
+EMPTY_TILE = 0
+NEBULA_TILE = 1
+ASTEROID_TILE = 2
 @struct.dataclass
 class EnvState:
     units: chex.Array
@@ -66,7 +67,10 @@ def flat_obs_to_state(flat_obs: chex.Array) -> EnvState:
 
 def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
     generated = gen_map(key, params)
-    relic_nodes_map_weights = jnp.zeros(shape=(params.map_height, params.map_width), dtype=jnp.int16)
+    relic_nodes_map_weights = jnp.zeros(
+        shape=(params.map_height, params.map_width), dtype=jnp.int16
+    )
+
     # TODO (this could be optimized better)
     def update_relic_node(relic_nodes_map_weights, relic_data):
         relic_node, relic_node_config, mask = relic_data
@@ -77,22 +81,30 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
                 y, x = start_y + dy, start_x + dx
                 valid_pos = jnp.logical_and(
                     jnp.logical_and(y >= 0, x >= 0),
-                    jnp.logical_and(y < params.map_height, x < params.map_width)
+                    jnp.logical_and(y < params.map_height, x < params.map_width),
                 )
                 relic_nodes_map_weights = jnp.where(
                     valid_pos & mask,
                     relic_nodes_map_weights.at[y, x].add(relic_node_config[dy, dx]),
-                    relic_nodes_map_weights
+                    relic_nodes_map_weights,
                 )
         return relic_nodes_map_weights, None
+
+    # this is really slow...
     relic_nodes_map_weights, _ = jax.lax.scan(
         update_relic_node,
         relic_nodes_map_weights,
-        (generated["relic_nodes"], generated["relic_node_configs"], generated["relic_nodes_mask"])
+        (
+            generated["relic_nodes"],
+            generated["relic_node_configs"],
+            generated["relic_nodes_mask"],
+        ),
     )
     state = EnvState(
         units=jnp.zeros(shape=(params.num_teams, params.max_units, 3), dtype=jnp.int16),
-        units_mask=jnp.zeros(shape=(params.num_teams, params.max_units), dtype=jnp.bool),
+        units_mask=jnp.zeros(
+            shape=(params.num_teams, params.max_units), dtype=jnp.bool
+        ),
         team_points=jnp.zeros(shape=(params.num_teams), dtype=jnp.int32),
         energy_nodes=generated["energy_nodes"],
         energy_nodes_mask=generated["energy_nodes_mask"],
@@ -100,7 +112,10 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
         relic_nodes_mask=generated["relic_nodes_mask"],
         relic_node_configs=generated["relic_node_configs"],
         relic_nodes_map_weights=relic_nodes_map_weights,
-        sensor_mask=jnp.zeros(shape=(params.num_teams, params.map_height, params.map_width), dtype=jnp.bool),
+        sensor_mask=jnp.zeros(
+            shape=(params.num_teams, params.map_height, params.map_width),
+            dtype=jnp.bool,
+        ),
         map_features=generated["map_features"],
     )
 
@@ -117,9 +132,11 @@ def spawn_unit(
     state: EnvState, team: int, unit_id: int, position: chex.Array
 ) -> EnvState:
     state = state.replace(
-        units=state.units.at[team, unit_id, :].set(jnp.array([position[0], position[1], 0], dtype=jnp.int16))
+        units=state.units.at[team, unit_id, :].set(
+            jnp.array([position[0], position[1], 0], dtype=jnp.int16)
+        )
     )
-    state = state.replace(units_mask=state.units_mask.at[team, unit_id].set(1))
+    state = state.replace(units_mask=state.units_mask.at[team, unit_id].set(True))
     return state
 
 
@@ -133,21 +150,21 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     relic_nodes_mask = jnp.zeros(shape=(params.max_relic_nodes), dtype=jnp.int16)
     if params.map_type == "dev0":
         assert params.map_height == 16 and params.map_width == 16
-        map_features = map_features.at[4, 4, 0].set(1)
-        map_features = map_features.at[:3, :2, 0].set(1)
-        map_features = map_features.at[4:7, 6:9, 0].set(1)
-        map_features = map_features.at[4, 5, 0].set(1)
-        map_features = map_features.at[9:12, 5:6, 0].set(1)
-        map_features = map_features.at[14:, 12:15, 0].set(1)
+        map_features = map_features.at[4, 4, 0].set(NEBULA_TILE)
+        map_features = map_features.at[:3, :2, 0].set(NEBULA_TILE)
+        map_features = map_features.at[4:7, 6:9, 0].set(NEBULA_TILE)
+        map_features = map_features.at[4, 5, 0].set(NEBULA_TILE)
+        map_features = map_features.at[9:12, 5:6, 0].set(NEBULA_TILE)
+        map_features = map_features.at[14:, 12:15, 0].set(NEBULA_TILE)
 
-        map_features = map_features.at[12:15, 8:10, 0].set(2)
-        map_features = map_features.at[1:4, 6:8, 0].set(2)
+        map_features = map_features.at[12:15, 8:10, 0].set(ASTEROID_TILE)
+        map_features = map_features.at[1:4, 6:8, 0].set(ASTEROID_TILE)
 
-        map_features = map_features.at[11:12, 3:6].set(2)
-        map_features = map_features.at[4:5, 10:13, 0].set(2)
+        map_features = map_features.at[11:12, 3:6].set(ASTEROID_TILE)
+        map_features = map_features.at[4:5, 10:13, 0].set(ASTEROID_TILE)
 
-        map_features = map_features.at[11, 11, 0].set(1)
-        map_features = map_features.at[11, 12, 0].set(1)
+        map_features = map_features.at[11, 11, 0].set(NEBULA_TILE)
+        map_features = map_features.at[11, 12, 0].set(NEBULA_TILE)
         energy_nodes = energy_nodes.at[0, :].set(jnp.array([4, 4], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[0].set(1)
         energy_nodes = energy_nodes.at[1, :].set(jnp.array([11, 11], dtype=jnp.int16))
@@ -162,17 +179,20 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         relic_nodes = relic_nodes.at[3, :].set(jnp.array([13, 2], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[3].set(1)
 
-        relic_node_configs = jax.random.randint(
-            key,
-            shape=(
-                params.max_relic_nodes,
-                params.relic_config_size,
-                params.relic_config_size,
-            ),
-            minval=0,
-            maxval=10,
-            dtype=jnp.int16,
-        ) >= 6
+        relic_node_configs = (
+            jax.random.randint(
+                key,
+                shape=(
+                    params.max_relic_nodes,
+                    params.relic_config_size,
+                    params.relic_config_size,
+                ),
+                minval=0,
+                maxval=10,
+                dtype=jnp.int16,
+            )
+            >= 6
+        )
 
     return dict(
         map_features=map_features,

@@ -2,13 +2,16 @@ from luxai_s3.params import EnvParams
 from luxai_s3.state import EnvState
 import numpy as np
 import pygame
+
 TILE_SIZE = 64
+
+
 class LuxAIPygameRenderer:
     def __init__(self):
         pass
+
     def render(self, state: EnvState, params: EnvParams):
         """Render the environment."""
-
 
         # Initialize Pygame if not already done
         if not pygame.get_init():
@@ -27,8 +30,6 @@ class LuxAIPygameRenderer:
                 "show_sensor_mask": True,
             }
 
-        
-
         # Handle events to keep the window responsive
         render_state = "running"
         while True:
@@ -41,14 +42,19 @@ class LuxAIPygameRenderer:
                         else:
                             render_state = "running"
                     elif event.text == "r":
-                        self.display_options["show_relic_spots"] = not self.display_options["show_relic_spots"]
+                        self.display_options["show_relic_spots"] = (
+                            not self.display_options["show_relic_spots"]
+                        )
                     elif event.text == "s":
-                        self.display_options["show_sensor_mask"] = not self.display_options["show_sensor_mask"]
+                        self.display_options["show_sensor_mask"] = (
+                            not self.display_options["show_sensor_mask"]
+                        )
             else:
                 if render_state == "paused":
                     self.clock.tick(60)
                     continue
                 break
+
     def _update_display(self, state: EnvState, params: EnvParams):
         # Fill the screen with a background color
         self.screen.fill((200, 200, 200))
@@ -72,6 +78,7 @@ class LuxAIPygameRenderer:
             shape_surf = pygame.Surface(pygame.Rect(rect).size, pygame.SRCALPHA)
             pygame.draw.rect(shape_surf, color, shape_surf.get_rect())
             surface.blit(shape_surf, rect)
+
         if self.display_options["show_relic_spots"]:
             for i in range(params.max_relic_nodes):
                 if state.relic_nodes_mask[i]:
@@ -82,21 +89,26 @@ class LuxAIPygameRenderer:
                         for dy in range(-half_size, half_size + 1):
                             config_x = x + dx
                             config_y = y + dy
-                            
-                            if (0 <= config_x < params.map_width and 
-                                0 <= config_y < params.map_height):
-                                
-                                config_value = state.relic_node_configs[i, 
-                                    dy + half_size, dx + half_size]
-                                
-                                if config_value > 0 :
+
+                            if (
+                                0 <= config_x < params.map_width
+                                and 0 <= config_y < params.map_height
+                            ):
+
+                                config_value = state.relic_node_configs[
+                                    i, dy + half_size, dx + half_size
+                                ]
+
+                                if config_value > 0:
                                     rect = pygame.Rect(
-                                        config_x * TILE_SIZE, 
-                                        config_y * TILE_SIZE, 
-                                        TILE_SIZE, 
-                                        TILE_SIZE
+                                        config_x * TILE_SIZE,
+                                        config_y * TILE_SIZE,
+                                        TILE_SIZE,
+                                        TILE_SIZE,
                                     )
-                                    draw_rect_alpha(self.surface, (255, 215, 0, 50), rect)  # Semi-transparent gold
+                                    draw_rect_alpha(
+                                        self.surface, (255, 215, 0, 50), rect
+                                    )  # Semi-transparent gold
 
         # Draw energy nodes
         for i in range(params.max_energy_nodes):
@@ -108,7 +120,10 @@ class LuxAIPygameRenderer:
                     TILE_SIZE // 4
                 )  # Adjust this value to change the size of the circle
                 pygame.draw.circle(
-                    self.surface, (0, 255, 0, 255), (int(center_x), int(center_y)), radius
+                    self.surface,
+                    (0, 255, 0, 255),
+                    (int(center_x), int(center_y)),
+                    radius,
                 )
         # Draw relic nodes
         for i in range(params.max_relic_nodes):
@@ -118,7 +133,9 @@ class LuxAIPygameRenderer:
                 rect_x = x * TILE_SIZE + (TILE_SIZE - rect_size) // 2
                 rect_y = y * TILE_SIZE + (TILE_SIZE - rect_size) // 2
                 rect = pygame.Rect(rect_x, rect_y, rect_size, rect_size)
-                pygame.draw.rect(self.surface, (173, 151, 32, 255), rect)  # Light blue color
+                pygame.draw.rect(
+                    self.surface, (173, 151, 32, 255), rect
+                )  # Light blue color
 
         # Draw sensor mask
         if self.display_options["show_sensor_mask"]:
@@ -126,8 +143,13 @@ class LuxAIPygameRenderer:
                 for x in range(params.map_width):
                     for y in range(params.map_height):
                         if state.sensor_mask[team, y, x]:
-                            draw_rect_alpha(self.surface, (255, 0, 0, 25), pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-
+                            draw_rect_alpha(
+                                self.surface,
+                                (255, 0, 0, 25),
+                                pygame.Rect(
+                                    x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE
+                                ),
+                            )
 
         # Draw units
         for team in range(2):
@@ -182,7 +204,6 @@ class LuxAIPygameRenderer:
                 (params.map_width * TILE_SIZE, y * TILE_SIZE),
             )
 
-        
         self.screen.blit(self.surface, (0, 0))
         # Update the display
         pygame.display.flip()

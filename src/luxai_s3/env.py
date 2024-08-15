@@ -11,7 +11,7 @@ from jax import lax
 
 from luxai_s3.params import EnvParams
 from luxai_s3.spaces import MultiDiscrete
-from luxai_s3.state import EnvObs, EnvState, gen_state
+from luxai_s3.state import NEBULA_TILE, EnvObs, EnvState, gen_state
 from luxai_s3.pygame_render import LuxAIPygameRenderer
 
 
@@ -67,57 +67,94 @@ class LuxAIS3Env(environment.Environment):
 
         # Move units for both teams
         state = state.replace(
-            units=jax.vmap(lambda team_units, team_action, team_mask: jax.vmap(move_unit)(team_units, team_action, team_mask))(
-                state.units, action, state.units_mask
-            )
+            units=jax.vmap(
+                lambda team_units, team_action, team_mask: jax.vmap(move_unit)(
+                    team_units, team_action, team_mask
+                )
+            )(state.units, action, state.units_mask)
         )
 
-        # compute the sensor mask for both teams
-        sensor_mask = jnp.zeros(shape=(params.num_teams, params.map_height, params.map_width), dtype=jnp.bool_)
-        # sensor_mask = sensor_mask.at[state.units[0][1], state.units[0][0]].set(True)
-        # sensor_mask = sensor_mask.at[state.units[1][1], state.units[1][0]].set(True)
+        """Compute the vision power and sensor mask for both teams 
+        
+        Algorithm:
+
+        For each team, generate a integer vision power array over the map. 
+        For each unit in team, add unit sensor range value (its kind of like the units sensing power/depth) to each tile the unit's sensor range
+        Clamp the vision power array to range [0, unit_sensing_range].
+
+        With 2 vision power maps, take the nebula vision mask * nebula vision power and subtract it from the vision power maps.
+        Now any time the vision power map has value > 0, the team can sense the tile. This forms the sensor mask
+        """
+
+        vision_power_map_padding = params.unit_sensor_range
+        vision_power_map = jnp.zeros(
+            shape=(params.num_teams, params.map_height + 2 * vision_power_map_padding, params.map_width + 2 * vision_power_map_padding),
+            dtype=jnp.int16,
+        )
+
         # Update sensor mask based on the sensor range
-        # def update_sensor_mask(unit_pos, sensor_mask):
-        #     y, x = unit_pos
-        #     for dy in range(-params.unit_sensor_range, params.unit_sensor_range + 1):
-        #         for dx in range(-params.unit_sensor_range, params.unit_sensor_range + 1):
-        #             new_y, new_x = y + dy, x + dx
-        #             in_range = dx + dy <= params.unit_sensor_range
-        #             in_bounds = (0 <= new_y) & (new_y < params.map_height) & (0 <= new_x) & (new_x < params.map_width)
-        #             sensor_mask = jnp.where(
-        #                 in_range & in_bounds,
-        #                 sensor_mask.at[new_y, new_x].set(True),
-        #                 sensor_mask
-        #             )
-        #     return sensor_mask
+        def update_vision_power_map(unit_pos, sensor_mask):
+            x, y = unit_pos
+            update = jnp.ones(
+                shape=(
+                    params.unit_sensor_range * 2 + 1,
+                    params.unit_sensor_range * 2 + 1,
+                ),
+                dtype=jnp.int16,
+            )
+            # TODO (stao): add code to compute distance to center of unit to edge of vision
+            # Create a square array with dimensions (2 * sensor_range + 1) x (2 * sensor_range + 1)
+            # each value in the array is equal to distance to the center of the array
+            y, x = jnp.ogrid[-params.unit_sensor_range:params.unit_sensor_range + 1, 
+                             -params.unit_sensor_range:params.unit_sensor_range + 1]
+            distances = jnp.abs(x) + jnp.abs(y)
+            update = jnp.clip(params.unit_sensor_range + 1 - distances, 0, params.unit_sensor_range).astype(jnp.int16)
+            update = jnp.ones(shape= (params.unit_sensor_range * 2 + 1, params.unit_sensor_range * 2 + 1), dtype=jnp.int16)
+            for i in range(params.unit_sensor_range + 1):
+                update = update.at[i:params.unit_sensor_range * 2 + 1 - i, i:params.unit_sensor_range * 2 + 1 - i].set(i + 1)
+            x, y = unit_pos
+            sensor_mask = jax.lax.dynamic_update_slice(
+                sensor_mask,
+                update=update,
+                start_indices=(
+                    y - params.unit_sensor_range + vision_power_map_padding,
+                    x - params.unit_sensor_range + vision_power_map_padding,
+                ),
+            )
+            return sensor_mask
 
-        # # Apply the sensor mask update for all units of both teams
-        # def update_unit_sensor_mask(unit_pos, mask, sensor_mask):
-        #     return jax.lax.cond(
-        #         mask,
-        #         lambda: update_sensor_mask(unit_pos, sensor_mask),
-        #         lambda: sensor_mask
-        #     )
+        # Apply the sensor mask update for all units of both teams
+        def update_unit_vision_power_map(unit_pos, mask, sensor_mask):
+            return jax.lax.cond(
+                mask,
+                lambda: update_vision_power_map(unit_pos, sensor_mask),
+                lambda: sensor_mask,
+            )
 
-        # def update_team_sensor_mask(team_units, team_mask, sensor_mask):
-        #     def body_fun(carry, i):
-        #         sensor_mask = carry
-        #         return update_unit_sensor_mask(team_units[i, :2], team_mask[i], sensor_mask), None
+        def update_team_vision_power_map(team_units, team_mask, sensor_mask):
+            def body_fun(carry, i):
+                sensor_mask = carry
+                return (
+                    update_unit_vision_power_map(
+                        team_units[i, :2], team_mask[i], sensor_mask
+                    ),
+                    None,
+                )
 
-        #     final_sensor_mask, _ = jax.lax.scan(body_fun, sensor_mask, jnp.arange(params.max_units))
-        #     return final_sensor_mask
+            final_sensor_mask, _ = jax.lax.scan(
+                body_fun, sensor_mask, jnp.arange(params.max_units)
+            )
+            return final_sensor_mask
 
-        # sensor_mask = jax.vmap(update_team_sensor_mask, in_axes=(0, 0, 0))(
-        #     state.units,
-        #     state.units_mask,
-        #     sensor_mask
-        # )
-        for team in range(params.num_teams):
-            for unit in state.units[team][state.units_mask[team]]:
-                sensor_mask = sensor_mask.at[
-                    team, 
-                    jnp.maximum(unit[1]-params.unit_sensor_range, 0):unit[1]+params.unit_sensor_range+1, jnp.maximum(unit[0]-params.unit_sensor_range, 0):unit[0]+params.unit_sensor_range+1].set(True)
+        vision_power_map = jax.vmap(update_team_vision_power_map)(
+            state.units, state.units_mask, vision_power_map
+        )
+        vision_power_map = vision_power_map[:, vision_power_map_padding:-vision_power_map_padding, vision_power_map_padding:-vision_power_map_padding]
 
+        # handle nebula tiles
+        vision_power_map = vision_power_map - (state.map_features[:, :, 0] == NEBULA_TILE) * params.nebula_tile_vision_reduction
+        
+        sensor_mask = vision_power_map > 0
         state = state.replace(sensor_mask=sensor_mask)
 
         # Compute relic scores
@@ -133,17 +170,17 @@ class LuxAIS3Env(environment.Environment):
             )
             return jnp.sum(scores, dtype=jnp.int32)
 
-        team_0_score = team_relic_score(state.units[0], state.units_mask[0])
-        team_1_score = team_relic_score(state.units[1], state.units_mask[1])
+        # team_0_score = team_relic_score(state.units[0], state.units_mask[0])
+        # team_1_score = team_relic_score(state.units[1], state.units_mask[1])
 
-        # Update team points
-        state = state.replace(
-            team_points=state.team_points.at[0].add(team_0_score)
-        )
-        state = state.replace(
-            team_points=state.team_points.at[1].add(team_1_score)
-        )
-        print(state.team_points)
+        # # Update team points
+        # state = state.replace(
+        #     team_points=state.team_points.at[0].add(team_0_score)
+        # )
+        # state = state.replace(
+        #     team_points=state.team_points.at[1].add(team_1_score)
+        # )
+        # print(state.team_points)
         # Update state's step count
         state = state.replace(steps=state.steps + 1)
 
@@ -168,7 +205,7 @@ class LuxAIS3Env(environment.Environment):
 
         return self.get_obs(state, params=params, key=key), state
 
-    # @functools.partial(jax.jit, static_argnums=(0,4))
+    @functools.partial(jax.jit, static_argnums=(0,4))
     def step(
         self,
         key: chex.PRNGKey,
@@ -178,10 +215,10 @@ class LuxAIS3Env(environment.Environment):
     ) -> Tuple[EnvObs, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Performs step transitions in the environment."""
         # Use default env parameters if no others specified
+        print("Compiled step")
         if params is None:
             params = self.default_params
         key, key_reset = jax.random.split(key)
-
         obs_st, state_st, reward, terminated, truncated, info = self.step_env(
             key, state, action, params
         )
@@ -197,14 +234,15 @@ class LuxAIS3Env(environment.Environment):
             state = state_st
         # Auto-reset environment based on done
         done = terminated | truncated
-        
+
         return obs, state, reward, terminated, truncated, info
 
-    # @functools.partial(jax.jit, static_argnums=(0, 2))
+    @functools.partial(jax.jit, static_argnums=(0, 2))
     def reset(
         self, key: chex.PRNGKey, params: Optional[EnvParams] = None
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
+        print("Compiled reset")
         # Use default env parameters if no others specified
         if params is None:
             params = self.default_params

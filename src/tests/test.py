@@ -1,3 +1,4 @@
+import time
 from luxai_s3.params import EnvParams
 
 if __name__ == "__main__":
@@ -26,17 +27,20 @@ if __name__ == "__main__":
         subkey, state, action, params=env_params
     )
 
-    print("Observation:", obs)
-    print("Reward:", reward)
-    print("Terminated:", terminated)
-    print("Truncated:", truncated)
-    print("Info:", info)
-
-    while True:
+    # print("Observation:", obs)
+    # print("Reward:", reward)
+    # print("Terminated:", terminated)
+    # print("Truncated:", truncated)
+    # print("Info:", info)
+    print("Benchmarking time")
+    stime = time.time()
+    N = 1000
+    for _ in range(N):
         key, subkey = jax.random.split(key)
         action = env.action_space(env_params).sample(subkey)
-        # import ipdb;ipdb.set_trace()
         obs, state, reward, terminated, truncated, info = env.step(
             subkey, state, action, params=env_params
         )
         env.render(state, env_params)
+    etime = time.time()
+    print(f"FPS: {N / (etime - stime)}")
