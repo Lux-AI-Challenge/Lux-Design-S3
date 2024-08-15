@@ -33,7 +33,7 @@ class LuxAIS3Env(environment.Environment):
         params: EnvParams,
     ) -> Tuple[EnvObs, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         # state = state.replace() # TODO (stao)
-        action = jnp.stack([action["team_0"], action["team_1"]])
+        action = jnp.stack([action["team_0"], action["team_1"]]) * 0 + 1
         ### process unit movement ###
         # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left
         # Define movement directions
@@ -52,8 +52,9 @@ class LuxAIS3Env(environment.Environment):
             new_pos = unit.position + directions[action]
             # Check if the new position is on a map feature of value 2
             is_blocked = state.map_features.tile_type[new_pos[0], new_pos[1]] == ASTEROID_TILE
+            enough_energy = unit.energy >= params.unit_move_cost
             # If blocked, keep the original position
-            new_pos = jnp.where(is_blocked, unit.position, new_pos)
+            # new_pos = jnp.where(is_blocked, unit.position, new_pos)
             # Ensure the new position is within the map boundaries
             new_pos = jnp.clip(
                 new_pos,
@@ -62,9 +63,9 @@ class LuxAIS3Env(environment.Environment):
                     [params.map_width - 1, params.map_height - 1], dtype=jnp.int16
                 ),
             )
+            unit_moved = mask & ~is_blocked & enough_energy
             # Update the unit's position only if it's active
-            # import ipdb; ipdb.set_trace()
-            return UnitState(position=new_pos, energy=unit.energy)
+            return UnitState(position=jnp.where(unit_moved, new_pos, unit.position), energy=jnp.where(unit_moved, unit.energy - params.unit_move_cost, unit.energy))
 
         # Move units for both teams
         # jax.debug.breakpoint()
@@ -76,6 +77,35 @@ class LuxAIS3Env(environment.Environment):
                 ), in_axes=(0, 0, 0)
             )(state.units, action, state.units_mask)
         )
+
+        """Compute energy field of the map and apply it to the units"""
+        # first compute a array of shape (map_height, map_width, num_energy_nodes) with values equal to the distance of the tile to the energy node
+        mm = jnp.meshgrid(jnp.arange(params.map_width), jnp.arange(params.map_height))
+        mm = jnp.stack([mm[0], mm[1]]).T # mm[x, y] gives [x, y]
+        distances_to_nodes = jax.vmap(lambda pos: jnp.linalg.norm(mm - pos, axis=-1))(state.energy_nodes)
+        def compute_energy_field(node_fn_spec, distances_to_node, mask):
+            fn_i, x, y, z = node_fn_spec
+            return jnp.where(mask, lax.switch(fn_i, ENERGY_NODE_FNS, distances_to_node, x, y, z), jnp.zeros_like(distances_to_node))
+        energy_field = jax.vmap(compute_energy_field)(state.energy_node_fns, distances_to_nodes, state.energy_nodes_mask)
+        energy_field = jnp.round(energy_field.sum(0))
+        state = state.replace(energy_field=energy_field)
+
+        # Update unit energy based on the energy field of their current position
+        def update_unit_energy(unit: UnitState, mask):
+            x, y = unit.position
+            energy_gain = state.energy_field[x, y]
+            new_energy = jnp.clip(unit.energy + energy_gain, params.min_unit_energy, params.max_unit_energy)
+            return UnitState(position=unit.position, energy=jnp.where(mask, new_energy, unit.energy))
+
+        # Apply the energy update for all units of both teams
+        state = state.replace(
+            units=jax.vmap(
+                lambda team_units, team_mask: jax.vmap(update_unit_energy)(
+                    team_units, team_mask
+                )
+            )(state.units, state.units_mask)
+        )
+
 
         """Compute the vision power and sensor mask for both teams 
         
@@ -145,20 +175,6 @@ class LuxAIS3Env(environment.Environment):
         
         sensor_mask = vision_power_map > 0
         state = state.replace(sensor_mask=sensor_mask)
-
-
-        """Compute energy field of the map and apply it to the units"""
-        # first compute a array of shape (map_height, map_width, num_energy_nodes) with values equal to the distance of the tile to the energy node
-        mm = jnp.meshgrid(jnp.arange(params.map_width), jnp.arange(params.map_height))
-        mm = jnp.stack([mm[0], mm[1]]).T # mm[x, y] gives [x, y]
-        distances_to_nodes = jax.vmap(lambda pos: jnp.linalg.norm(mm - pos, axis=-1))(state.energy_nodes)
-        def compute_energy_field(node_fn_spec, distances_to_node, mask):
-            fn_i, x, y, z = node_fn_spec
-            return jnp.where(mask, lax.switch(fn_i, ENERGY_NODE_FNS, distances_to_node, x, y, z), jnp.zeros_like(distances_to_node))
-        energy_field = jax.vmap(compute_energy_field)(state.energy_node_fns, distances_to_nodes, state.energy_nodes_mask)
-        energy_field = jnp.round(energy_field.sum(0))
-        state = state.replace(energy_field=energy_field)
-        # import ipdb; ipdb.set_trace()
 
         # Compute relic scores
         def compute_relic_score(unit, relic_nodes_map_weights, mask):

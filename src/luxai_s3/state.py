@@ -150,21 +150,21 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
         map_features=generated["map_features"],
     )
 
-    state = spawn_unit(state, 0, 0, [0, 0])
-    state = spawn_unit(state, 0, 1, [0, 0])
+    state = spawn_unit(state, 0, 0, [0, 0], params)
+    state = spawn_unit(state, 0, 1, [0, 0], params)
     # state = spawn_unit(state, 0, 2, [0, 0])
-    state = spawn_unit(state, 1, 0, [15, 15])
-    state = spawn_unit(state, 1, 1, [15, 15])
+    state = spawn_unit(state, 1, 0, [15, 15], params)
+    state = spawn_unit(state, 1, 1, [15, 15], params)
     # state = spawn_unit(state, 1, 2, [15, 15])
     return state
 
 
 def spawn_unit(
-    state: EnvState, team: int, unit_id: int, position: chex.Array
+    state: EnvState, team: int, unit_id: int, position: chex.Array, params: EnvParams
 ) -> EnvState:
     unit_state = state.units
     unit_state = unit_state.replace(position=unit_state.position.at[team, unit_id, :].set(jnp.array(position, dtype=jnp.int16)))
-    unit_state = unit_state.replace(energy=unit_state.energy.at[team, unit_id, :].set(jnp.array([100], dtype=jnp.int16)))
+    unit_state = unit_state.replace(energy=unit_state.energy.at[team, unit_id, :].set(jnp.array([params.init_unit_energy], dtype=jnp.int16)))
     # state = state.replace(
     #     units
     #     # units=state.units.at[team, unit_id, :].set(

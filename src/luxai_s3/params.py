@@ -13,6 +13,7 @@ class EnvParams:
     # configs for units
     max_units: int = 4
     init_unit_energy: int = 10
+    min_unit_energy: int = 0
     max_unit_energy: int = 400
     unit_move_cost: int = 1
 

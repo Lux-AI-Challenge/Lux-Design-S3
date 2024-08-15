@@ -39,7 +39,7 @@ Units have a single property called energy which determines whether they can per
 
 The sap action lets a unit target a specific tile on the map within a range called `params.unit_sap_range` and reduces the energy of each unit on the target tile by `params.unit_sap_amount`. `params.unit_sap_amount` is random between 10 and 50, and `params.unit_sap_range` is random between 3 and 8.
 
-Move action cost is `params.unit_move_energy_cost` which is random between 1 and 5. Sap action cost is the same as the amount sapped which is `params.unit_sap_amount`, randomized between 10 and 50.
+Move action cost is `params.unit_move_cost` which is random between 1 and 5. Sap action cost is the same as the amount sapped which is `params.unit_sap_amount`, randomized between 10 and 50.
 
 
 ### Vision
@@ -61,6 +61,16 @@ When a unit is inside a nebula tile, if the nebula vision reduction is powerful 
 ## Relic Nodes and Team Points
 
 
+## Match Resolution Order
+
+At each time step of a match, we run the following steps in order:
+
+1. Move all units that have enough energy to move
+2. Execute the sap actions of all units that have enough energy to do so
+3. Update the energy of all units based on their position
+4. Compute new team points
+5. Determine the team vision for all teams and return observations accordingly
+
 ## Game Parameters
 
 ### Randomized Game Parameters / Map Generation
@@ -71,4 +81,4 @@ There are a number of randomized game paramteres which can modify and even disab
 - `params.unit_sap_range` - 3 to 8
 - `params.nebula_tile_vision_reduction` - 0 to 3
 - `params.unit_sensor_range` - 1 to 3
-- `params.unit_move_energy_cost` - 1 to 5
+- `params.unit_move_cost` - 1 to 5
