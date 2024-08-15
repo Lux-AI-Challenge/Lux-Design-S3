@@ -32,7 +32,9 @@ class EnvState:
     The first number is the function used. The subsequent numbers parameterize the function. The function is applied to distance of map tile to energy node and the function parameters.
     """
 
-
+    energy_field: chex.Array
+    """Energy field in the environment with shape (H, W) for H height, W width. This is generated from other state"""
+    
     energy_nodes_mask: chex.Array
     """Mask of energy nodes in the environment with shape (N) for N max energy nodes"""
     relic_nodes: chex.Array
@@ -121,6 +123,7 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
         energy_nodes=generated["energy_nodes"],
         energy_node_fns=generated["energy_node_fns"],
         energy_nodes_mask=generated["energy_nodes_mask"],
+        energy_field=jnp.zeros(shape=(params.map_height, params.map_width), dtype=jnp.int16),
         relic_nodes=generated["relic_nodes"],
         relic_nodes_mask=generated["relic_nodes_mask"],
         relic_node_configs=generated["relic_node_configs"],
@@ -185,7 +188,9 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         energy_node_fns = jnp.array(
             [
                 [0, 1, 0, 4],
-                [1, 4, 0, 2]
+                # [1, 4, 0, 2],
+                [0, 1, 0, 4],
+                # [1, 4, 0, 0]
             ]
         )
         energy_node_fns = jnp.concat([energy_node_fns, jnp.zeros((params.max_energy_nodes - 2, 4), dtype=jnp.int16)], axis=0)

@@ -28,6 +28,7 @@ class LuxAIPygameRenderer:
                 "show_grid": True,
                 "show_relic_spots": True,
                 "show_sensor_mask": True,
+                "show_energy_field": True,
             }
 
         # Handle events to keep the window responsive
@@ -48,6 +49,10 @@ class LuxAIPygameRenderer:
                     elif event.text == "s":
                         self.display_options["show_sensor_mask"] = (
                             not self.display_options["show_sensor_mask"]
+                        )
+                    elif event.text == "e":
+                        self.display_options["show_energy_field"] = (
+                            not self.display_options["show_energy_field"]
                         )
             else:
                 if render_state == "paused":
@@ -150,6 +155,32 @@ class LuxAIPygameRenderer:
                                     x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE
                                 ),
                             )
+
+        if self.display_options["show_energy_field"]:
+            font = pygame.font.Font(None, 32)  # You may need to adjust the font size
+            for x in range(params.map_width):
+                for y in range(params.map_height):
+                    energy_field_value = state.energy_field[y, x]
+                    text = font.render(str(energy_field_value), True, (255, 255, 255))
+                    text_rect = text.get_rect(
+                        center=((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
+                    )
+                    self.surface.blit(text, text_rect)
+                    print(energy_field_value)
+                    if energy_field_value > 0:
+                        draw_rect_alpha(
+                            self.surface,
+                            (0, 255, 0, 255 * energy_field_value / 10),
+                            pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+                        )
+                    else:
+                        draw_rect_alpha(
+                            self.surface,
+                            (255, 0, 0, -255 * energy_field_value / 10),
+                            pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+                        )
+
+        # Draw units
 
         # Draw units
         for team in range(2):

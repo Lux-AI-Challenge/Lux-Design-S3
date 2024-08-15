@@ -154,7 +154,8 @@ class LuxAIS3Env(environment.Environment):
             return jnp.where(mask, lax.switch(fn_i, ENERGY_NODE_FNS, distances_to_node, x, y, z), jnp.zeros_like(distances_to_node))
         energy_field = jax.vmap(compute_energy_field)(state.energy_node_fns, distances_to_nodes, state.energy_nodes_mask)
         energy_field = jnp.round(energy_field.sum(0))
-        import ipdb; ipdb.set_trace()
+        state = state.replace(energy_field=energy_field)
+        # import ipdb; ipdb.set_trace()
 
         # Compute relic scores
         def compute_relic_score(unit, relic_nodes_map_weights, mask):
@@ -204,7 +205,7 @@ class LuxAIS3Env(environment.Environment):
 
         return self.get_obs(state, params=params, key=key), state
 
-    # @functools.partial(jax.jit, static_argnums=(0,4))
+    @functools.partial(jax.jit, static_argnums=(0,4))
     def step(
         self,
         key: chex.PRNGKey,
