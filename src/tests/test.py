@@ -35,6 +35,6 @@ if __name__ == "__main__":
         obs, state, reward, terminated, truncated, info = env.step(
             subkey, state, action, params=env_params
         )
-        env.render(state, env_params)
+        # env.render(state, env_params)
     etime = time.time()
     print(f"FPS: {N / (etime - stime)}")
