@@ -26,12 +26,6 @@ if __name__ == "__main__":
     obs, state, reward, terminated, truncated, info = env.step(
         subkey, state, action, params=env_params
     )
-
-    # print("Observation:", obs)
-    # print("Reward:", reward)
-    # print("Terminated:", terminated)
-    # print("Truncated:", truncated)
-    # print("Info:", info)
     print("Benchmarking time")
     stime = time.time()
     N = 1000

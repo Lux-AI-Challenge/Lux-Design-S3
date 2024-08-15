@@ -18,6 +18,14 @@ class UnitState:
     """Position of the unit with shape (2) for x, y"""
     energy: int
     """Energy of the unit"""
+
+@struct.dataclass
+class MapTile:
+    energy: int
+    """Energy of the tile"""
+    tile_type: int
+    """Type of the tile"""
+
 @struct.dataclass
 class EnvState:
     units: UnitState
@@ -56,8 +64,8 @@ class EnvState:
     relic_nodes_map_weights: chex.Array
     """Map of relic nodes in the environment with shape (H, W) for H height, W width. True if a relic node is present, False otherwise. This is generated from other state"""
 
-    map_features: chex.Array
-    """Map features in the environment with shape (H, W, 2) for H height, W width, TODO (stao):
+    map_features: MapTile
+    """Map features in the environment with shape (W, H, 2) for W width, H height
     """
 
     sensor_mask: chex.Array
@@ -89,7 +97,7 @@ def flat_obs_to_state(flat_obs: chex.Array) -> EnvState:
 def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
     generated = gen_map(key, params)
     relic_nodes_map_weights = jnp.zeros(
-        shape=(params.map_height, params.map_width), dtype=jnp.int16
+        shape=(params.map_width, params.map_height), dtype=jnp.int16
     )
 
     # TODO (this could be optimized better)
@@ -106,7 +114,7 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
                 )
                 relic_nodes_map_weights = jnp.where(
                     valid_pos & mask,
-                    relic_nodes_map_weights.at[y, x].add(relic_node_config[dy, dx]),
+                    relic_nodes_map_weights.at[x, y].add(relic_node_config[dy, dx]),
                     relic_nodes_map_weights,
                 )
         return relic_nodes_map_weights, None
@@ -166,32 +174,38 @@ def spawn_unit(
     state = state.replace(units=unit_state, units_mask=state.units_mask.at[team, unit_id].set(True))
     return state
 
+def set_tile(map_features: MapTile, x: int, y: int, tile_type: int) -> MapTile:
+    return map_features.replace(tile_type=map_features.tile_type.at[x, y, 0].set(tile_type))
+
 
 def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
-    map_features = jnp.zeros(
-        shape=(params.map_height, params.map_width, 2), dtype=jnp.int16
-    )
+    map_features = MapTile(energy=jnp.zeros(
+        shape=(params.map_height, params.map_width, 1), dtype=jnp.int16
+    ), tile_type=jnp.zeros(
+        shape=(params.map_height, params.map_width, 1), dtype=jnp.int16
+    ))
     energy_nodes = jnp.zeros(shape=(params.max_energy_nodes, 2), dtype=jnp.int16)
     energy_nodes_mask = jnp.zeros(shape=(params.max_energy_nodes), dtype=jnp.int16)
     relic_nodes = jnp.zeros(shape=(params.max_relic_nodes, 2), dtype=jnp.int16)
     relic_nodes_mask = jnp.zeros(shape=(params.max_relic_nodes), dtype=jnp.int16)
     if params.map_type == "dev0":
         assert params.map_height == 16 and params.map_width == 16
-        map_features = map_features.at[4, 4, 0].set(NEBULA_TILE)
-        map_features = map_features.at[:3, :2, 0].set(NEBULA_TILE)
-        map_features = map_features.at[4:7, 6:9, 0].set(NEBULA_TILE)
-        map_features = map_features.at[4, 5, 0].set(NEBULA_TILE)
-        map_features = map_features.at[9:12, 5:6, 0].set(NEBULA_TILE)
-        map_features = map_features.at[14:, 12:15, 0].set(NEBULA_TILE)
+        map_features = set_tile(map_features, 4, 4, NEBULA_TILE)
+        map_features = set_tile(map_features, slice(3, 6), slice(2, 4), NEBULA_TILE)
+        map_features = set_tile(map_features, slice(4, 7), slice(6, 9), NEBULA_TILE)
+        map_features = set_tile(map_features, 4, 5, NEBULA_TILE)
+        map_features = set_tile(map_features, slice(9, 12), slice(5, 6), NEBULA_TILE)
+        map_features = set_tile(map_features, slice(14, 16), slice(12, 15), NEBULA_TILE)
 
-        map_features = map_features.at[12:15, 8:10, 0].set(ASTEROID_TILE)
-        map_features = map_features.at[1:4, 6:8, 0].set(ASTEROID_TILE)
+        map_features = set_tile(map_features, slice(12, 15), slice(8, 10), ASTEROID_TILE)
+        map_features = set_tile(map_features, slice(1, 4), slice(6, 8), ASTEROID_TILE)
 
-        map_features = map_features.at[11:12, 3:6].set(ASTEROID_TILE)
-        map_features = map_features.at[4:5, 10:13, 0].set(ASTEROID_TILE)
+        map_features = set_tile(map_features, slice(11, 12), slice(3, 6), ASTEROID_TILE)
+        map_features = set_tile(map_features, slice(4, 5), slice(10, 13), ASTEROID_TILE)
+        map_features = set_tile(map_features,15, 0, ASTEROID_TILE)
 
-        map_features = map_features.at[11, 11, 0].set(NEBULA_TILE)
-        map_features = map_features.at[11, 12, 0].set(NEBULA_TILE)
+        map_features = set_tile(map_features, 11, 11, NEBULA_TILE)
+        map_features = set_tile(map_features, 11, 12, NEBULA_TILE)
         energy_nodes = energy_nodes.at[0, :].set(jnp.array([4, 4], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[0].set(1)
         energy_nodes = energy_nodes.at[1, :].set(jnp.array([11, 11], dtype=jnp.int16))

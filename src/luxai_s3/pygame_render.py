@@ -1,5 +1,5 @@
 from luxai_s3.params import EnvParams
-from luxai_s3.state import EnvState
+from luxai_s3.state import ASTEROID_TILE, NEBULA_TILE, EnvState
 import numpy as np
 import pygame
 
@@ -69,10 +69,10 @@ class LuxAIPygameRenderer:
         for x in range(params.map_width):
             for y in range(params.map_height):
                 rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                tile_type = state.map_features[y, x, 0]
-                if tile_type == 1:
+                tile_type = state.map_features.tile_type[x, y]
+                if tile_type == NEBULA_TILE:
                     color = (166, 177, 225, 255)  # Light blue (a6b1e1) for tile type 1
-                elif tile_type == 2:
+                elif tile_type == ASTEROID_TILE:
                     color = (51, 56, 68, 255)
                 else:
                     color = (255, 255, 255, 255)  # White for other tile types

@@ -11,7 +11,7 @@ from jax import lax
 
 from luxai_s3.params import EnvParams
 from luxai_s3.spaces import MultiDiscrete
-from luxai_s3.state import ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, UnitState, gen_state
+from luxai_s3.state import ASTEROID_TILE, ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, UnitState, gen_state
 from luxai_s3.pygame_render import LuxAIPygameRenderer
 
 
@@ -51,7 +51,7 @@ class LuxAIS3Env(environment.Environment):
         def move_unit(unit: UnitState, action, mask):
             new_pos = unit.position + directions[action]
             # Check if the new position is on a map feature of value 2
-            is_blocked = state.map_features[new_pos[1], new_pos[0], 0] == 2
+            is_blocked = state.map_features.tile_type[new_pos[0], new_pos[1]] == ASTEROID_TILE
             # If blocked, keep the original position
             new_pos = jnp.where(is_blocked, unit.position, new_pos)
             # Ensure the new position is within the map boundaries
@@ -141,7 +141,7 @@ class LuxAIS3Env(environment.Environment):
         vision_power_map = vision_power_map[:, vision_power_map_padding:-vision_power_map_padding, vision_power_map_padding:-vision_power_map_padding]
 
         # handle nebula tiles
-        vision_power_map = vision_power_map - (state.map_features[:, :, 0] == NEBULA_TILE) * params.nebula_tile_vision_reduction
+        vision_power_map = vision_power_map - (state.map_features.tile_type == NEBULA_TILE)[..., 0] * params.nebula_tile_vision_reduction
         
         sensor_mask = vision_power_map > 0
         state = state.replace(sensor_mask=sensor_mask)

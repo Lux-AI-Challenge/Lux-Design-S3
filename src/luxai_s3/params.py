@@ -5,12 +5,31 @@ from flax import struct
 class EnvParams:
     max_steps_in_episode: int = 200
     map_type: str = "random"
+    """Map generation algorithm. Can change between games"""
     map_width: int = 16
     map_height: int = 16
     num_teams: int = 2
+
+    # configs for units
     max_units: int = 4
     init_unit_energy: int = 10
     max_unit_energy: int = 400
+    unit_move_cost: int = 1
+
+
+    unit_sap_cost: int = 10
+    """
+    The unit sap cost is the amount of energy a unit uses when it saps another unit. Can change between games.
+    """
+    unit_sap_drain: int = 1
+    """
+    The unit sap drain is the amount of energy a unit drains from another unit when it saps it. Can change between games.
+    """
+    unit_sap_range: int = 5
+    """
+    The unit sap range is the range of the unit's sap action.
+    """
+
 
     # configs for energy nodes
     max_energy_nodes: int = 10
