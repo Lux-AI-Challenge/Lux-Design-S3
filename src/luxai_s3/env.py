@@ -68,8 +68,6 @@ class LuxAIS3Env(environment.Environment):
             return UnitState(position=jnp.where(unit_moved, new_pos, unit.position), energy=jnp.where(unit_moved, unit.energy - params.unit_move_cost, unit.energy))
 
         # Move units for both teams
-        # jax.debug.breakpoint()
-        # import ipdb; ipdb.set_trace()
         state = state.replace(
             units=jax.vmap(
                 lambda team_units, team_action, team_mask: jax.vmap(move_unit, in_axes=(0, 0, 0))(
@@ -203,11 +201,16 @@ class LuxAIS3Env(environment.Environment):
         # )
         # print(state.team_points)
         # Update state's step count
-        state = state.replace(steps=state.steps + 1)
+        state = state.replace(steps=state.steps + 1, match_steps=state.match_steps + 1)
 
         reward = jnp.array(0.0)
         terminated = self.is_terminal(state, params)
-        truncated = state.steps >= params.max_steps_in_episode
+
+        # if match ended, then remove all units
+        match_ended = state.match_steps >= params.max_steps_in_match
+        state = state.replace(units_mask=jnp.where(match_ended, jnp.zeros_like(state.units_mask), state.units_mask), match_steps=jnp.where(match_ended, 0, state.match_steps))
+
+        truncated = state.steps >= params.max_steps_in_match * params.match_count_per_episode
         return (
             lax.stop_gradient(self.get_obs(state, params, key=key)),
             lax.stop_gradient(state),

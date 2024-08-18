@@ -3,12 +3,14 @@ from flax import struct
 
 @struct.dataclass
 class EnvParams:
-    max_steps_in_episode: int = 200
+    max_steps_in_match: int = 200
     map_type: str = "random"
     """Map generation algorithm. Can change between games"""
     map_width: int = 16
     map_height: int = 16
     num_teams: int = 2
+    match_count_per_episode: int = 5
+    """number of matches to play in one episode"""
 
     # configs for units
     max_units: int = 10

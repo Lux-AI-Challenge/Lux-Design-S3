@@ -75,6 +75,9 @@ class EnvState:
     """Team points in the environment with shape (T) for T teams"""
 
     steps: int = 0
+    """steps taken in the environment"""
+    match_steps: int = 0
+    """steps taken in the current match"""
 
 
 @struct.dataclass
