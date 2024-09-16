@@ -2,7 +2,7 @@ import axios from 'axios';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { isKaggleEnvironmentsEpisode, parseKaggleEnvironmentsEpisode } from './episode/kaggle-environments';
-import { isLuxAIS2Episode, parseLuxAIS2Episode } from './episode/luxai-s2';
+import { isLuxAISEpisode, parseLuxAISEpisode } from './episode/luxai';
 import { Episode, Tile } from './episode/model';
 
 const PRODUCTION_BASE_URL = 'https://s2vis.lux-ai.org';
@@ -109,8 +109,8 @@ export const useStore = create(
         }
 
         let episode: Episode | null = null;
-        if (isLuxAIS2Episode(data)) {
-          episode = parseLuxAIS2Episode(data);
+        if (isLuxAISEpisode(data)) {
+          episode = parseLuxAISEpisode(data);
         } else if (isKaggleEnvironmentsEpisode(data)) {
           episode = parseKaggleEnvironmentsEpisode(data);
         } else {

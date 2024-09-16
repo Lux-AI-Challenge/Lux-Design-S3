@@ -3,11 +3,11 @@ import { useCallback, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store';
 import { notifyError } from '../../utils/notifications';
+import dummy_episode from './episode.json';
 import { HomeCard } from './HomeCard';
 import { LoadFromElsewhere } from './LoadFromElsewhere';
 import { LoadFromFile } from './LoadFromFile';
 import { LoadFromKaggle } from './LoadFromKaggle';
-
 declare global {
   interface Window {
     episode?: any;
@@ -38,6 +38,10 @@ export function HomePage(): JSX.Element {
         notifyError('Cannot load episode from Kaggle', err.message);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    load(dummy_episode);
   }, []);
 
   useEffect(() => {

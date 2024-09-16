@@ -47,11 +47,17 @@ if __name__ == "__main__":
             subkey, state, action, params=env_params
         )
         states.append(state)
-        env.render(state, env_params)
+        # env.render(state, env_params)
     etime = time.time()
     print(f"FPS: {N / (etime - stime)}")
+
+    save_start_time = time.time()
     episode = env_states_to_dict(states)
     episode["params"] = flax.serialization.to_state_dict(env_params)
     with open("episode.json", "w") as f:
-        json.dump(episode, f, indent=4)
+        json.dump(episode, f)
+    save_end_time = time.time()
+    
+    save_duration = save_end_time - save_start_time
+    print(f"Time taken to save episode: {save_duration:.4f} seconds")
     import ipdb; ipdb.set_trace()

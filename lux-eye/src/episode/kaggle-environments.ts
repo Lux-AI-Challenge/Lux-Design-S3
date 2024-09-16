@@ -1,4 +1,4 @@
-import { parseLuxAIS2Episode } from './luxai-s2';
+import { parseLuxAISEpisode } from './luxai';
 import { Episode, EpisodeMetadata } from './model';
 
 export function isKaggleEnvironmentsEpisode(data: any): boolean {
@@ -29,5 +29,5 @@ export function parseKaggleEnvironmentsEpisode(data: any): Episode {
     });
   }
 
-  return parseLuxAIS2Episode({ observations, actions }, extra);
+  return parseLuxAISEpisode({ observations, actions }, extra);
 }
