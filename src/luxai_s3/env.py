@@ -88,12 +88,12 @@ class LuxAIS3Env(environment.Environment):
         energy_field = jnp.where(energy_field.mean() < .25, energy_field + (.25 - energy_field.mean()), energy_field)
         energy_field = jnp.round(energy_field.sum(0))
         energy_field = jnp.clip(energy_field, params.min_energy_per_tile, params.max_energy_per_tile)
-        state = state.replace(energy_field=energy_field)
+        state = state.replace(map_features=state.map_features.replace(energy=energy_field))
 
         # Update unit energy based on the energy field of their current position
         def update_unit_energy(unit: UnitState, mask):
             x, y = unit.position
-            energy_gain = state.energy_field[x, y]
+            energy_gain = state.map_features.energy[x, y]
             new_energy = jnp.clip(unit.energy + energy_gain, params.min_unit_energy, params.max_unit_energy)
             return UnitState(position=unit.position, energy=jnp.where(mask, new_energy, unit.energy))
 

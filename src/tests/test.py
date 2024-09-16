@@ -1,5 +1,9 @@
+import json
 import time
+
+import flax
 from luxai_s3.params import EnvParams
+from luxai_s3.state import EnvState, env_states_to_dict
 
 if __name__ == "__main__":
     import jax
@@ -15,11 +19,9 @@ if __name__ == "__main__":
     # Initialize a random key
     key = jax.random.PRNGKey(0)
 
-    states = []
     # Reset the environment
     key, subkey = jax.random.split(key)
     obs, state = env.reset(subkey, params=env_params)
-    states.append(state)
     # Take a random action
     key, subkey = jax.random.split(key)
     action = env.action_space(env_params).sample(subkey)
@@ -28,6 +30,12 @@ if __name__ == "__main__":
     obs, state, reward, terminated, truncated, info = env.step(
         subkey, state, action, params=env_params
     )
+
+
+
+    states = []
+    key, subkey = jax.random.split(key)
+    obs, state = env.reset(subkey, params=env_params)
     states.append(state)
     print("Benchmarking time")
     stime = time.time()
@@ -42,3 +50,8 @@ if __name__ == "__main__":
         env.render(state, env_params)
     etime = time.time()
     print(f"FPS: {N / (etime - stime)}")
+    episode = env_states_to_dict(states)
+    episode["params"] = flax.serialization.to_state_dict(env_params)
+    with open("episode.json", "w") as f:
+        json.dump(episode, f, indent=4)
+    import ipdb; ipdb.set_trace()

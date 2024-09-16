@@ -1,4 +1,5 @@
 import chex
+import flax
 import jax
 import jax.numpy as jnp
 from flax import struct
@@ -22,7 +23,7 @@ class UnitState:
 @struct.dataclass
 class MapTile:
     energy: int
-    """Energy of the tile"""
+    """Energy of the tile, generated via energy_nodes and energy_node_fns"""
     tile_type: int
     """Type of the tile"""
 
@@ -47,8 +48,8 @@ class EnvState:
     The first number is the function used. The subsequent numbers parameterize the function. The function is applied to distance of map tile to energy node and the function parameters.
     """
 
-    energy_field: chex.Array
-    """Energy field in the environment with shape (H, W) for H height, W width. This is generated from other state"""
+    # energy_field: chex.Array
+    # """Energy field in the environment with shape (H, W) for H height, W width. This is generated from other state"""
     
     energy_nodes_mask: chex.Array
     """Mask of energy nodes in the environment with shape (N) for N max energy nodes"""
@@ -81,6 +82,32 @@ class EnvState:
     """steps taken in the environment"""
     match_steps: int = 0
     """steps taken in the current match"""
+
+
+def env_states_to_dict(env_states: list[EnvState]):
+    def serialize_array(arr, key_path: str = ""):
+        if key_path in ["vision_power_map", "sensor_mask", "relic_nodes_mask", "relic_node_configs", "energy_node_fns"]:
+            return None
+        if isinstance(arr, jnp.ndarray):
+            return arr.tolist()
+        elif isinstance(arr, dict):
+            ret = dict()
+            for k, v in arr.items():
+                new_key = key_path + "/" + k if key_path else k
+                new_val = serialize_array(v, new_key)
+                if new_val is not None:
+                    ret[k] = new_val
+            return ret
+
+        return arr
+    steps = []
+    for state in env_states:
+        state = flax.serialization.to_state_dict(state)
+        steps.append(serialize_array(state))
+
+    return dict(
+        steps=steps
+    )
 
 
 @struct.dataclass
@@ -144,7 +171,7 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
         energy_nodes=generated["energy_nodes"],
         energy_node_fns=generated["energy_node_fns"],
         energy_nodes_mask=generated["energy_nodes_mask"],
-        energy_field=jnp.zeros(shape=(params.map_height, params.map_width), dtype=jnp.int16),
+        # energy_field=jnp.zeros(shape=(params.map_height, params.map_width), dtype=jnp.int16),
         relic_nodes=generated["relic_nodes"],
         relic_nodes_mask=generated["relic_nodes_mask"],
         relic_node_configs=generated["relic_node_configs"],
@@ -160,9 +187,9 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
     state = spawn_unit(state, 0, 0, [0, 0], params)
     state = spawn_unit(state, 0, 1, [0, 0], params)
     # state = spawn_unit(state, 0, 2, [0, 0])
-    # state = spawn_unit(state, 1, 0, [15, 15], params)
+    state = spawn_unit(state, 1, 0, [15, 15], params)
     state = spawn_unit(state, 1, 1, [15, 15], params)
-    state = spawn_unit(state, 1, 2, [15, 15])
+    # state = spawn_unit(state, 1, 2, [15, 15])
     return state
 
 

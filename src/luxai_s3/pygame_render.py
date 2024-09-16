@@ -161,7 +161,7 @@ class LuxAIPygameRenderer:
             font = pygame.font.Font(None, 32)  # You may need to adjust the font size
             for x in range(params.map_width):
                 for y in range(params.map_height):
-                    energy_field_value = state.energy_field[x, y]
+                    energy_field_value = state.map_features.energy[x, y]
                     text = font.render(str(energy_field_value), True, (255, 255, 255))
                     text_rect = text.get_rect(
                         center=((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)

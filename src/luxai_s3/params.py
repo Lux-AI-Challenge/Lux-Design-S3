@@ -3,7 +3,7 @@ from flax import struct
 
 @struct.dataclass
 class EnvParams:
-    max_steps_in_match: int = 200
+    max_steps_in_match: int = 100
     map_type: str = "random"
     """Map generation algorithm. Can change between games"""
     map_width: int = 16
