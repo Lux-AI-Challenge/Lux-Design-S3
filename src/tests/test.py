@@ -39,6 +39,6 @@ if __name__ == "__main__":
             subkey, state, action, params=env_params
         )
         states.append(state)
-        # env.render(state, env_params)
+        env.render(state, env_params)
     etime = time.time()
     print(f"FPS: {N / (etime - stime)}")

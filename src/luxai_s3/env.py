@@ -136,8 +136,8 @@ class LuxAIS3Env(environment.Environment):
                 sensor_mask,
                 update=update,
                 start_indices=(
-                    y - params.unit_sensor_range + vision_power_map_padding,
                     x - params.unit_sensor_range + vision_power_map_padding,
+                    y - params.unit_sensor_range + vision_power_map_padding,
                 ),
             )
             return sensor_mask
@@ -175,7 +175,7 @@ class LuxAIS3Env(environment.Environment):
         
         sensor_mask = vision_power_map > 0
         state = state.replace(sensor_mask=sensor_mask)
-
+        state = state.replace(vision_power_map=vision_power_map)
         # Compute relic scores
         def compute_relic_score(unit, relic_nodes_map_weights, mask):
             total_score = relic_nodes_map_weights[unit[1], unit[0]]

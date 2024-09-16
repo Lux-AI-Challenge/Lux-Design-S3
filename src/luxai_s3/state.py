@@ -71,6 +71,9 @@ class EnvState:
     sensor_mask: chex.Array
     """Sensor mask in the environment with shape (T, H, W) for T teams, H height, W width. This is generated from other state"""
 
+    vision_power_map: chex.Array
+    """Vision power map in the environment with shape (T, H, W) for T teams, H height, W width. This is generated from other state"""
+
     team_points: chex.Array
     """Team points in the environment with shape (T) for T teams"""
 
@@ -150,15 +153,16 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
             shape=(params.num_teams, params.map_height, params.map_width),
             dtype=jnp.bool,
         ),
+        vision_power_map=jnp.zeros(shape=(params.num_teams, params.map_height, params.map_width), dtype=jnp.int16),
         map_features=generated["map_features"],
     )
 
     state = spawn_unit(state, 0, 0, [0, 0], params)
     state = spawn_unit(state, 0, 1, [0, 0], params)
     # state = spawn_unit(state, 0, 2, [0, 0])
-    state = spawn_unit(state, 1, 0, [15, 15], params)
+    # state = spawn_unit(state, 1, 0, [15, 15], params)
     state = spawn_unit(state, 1, 1, [15, 15], params)
-    # state = spawn_unit(state, 1, 2, [15, 15])
+    state = spawn_unit(state, 1, 2, [15, 15])
     return state
 
 
