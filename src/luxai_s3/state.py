@@ -84,7 +84,7 @@ class EnvState:
     """steps taken in the current match"""
 
 
-def env_states_to_dict(env_states: list[EnvState]):
+def serialize_env_states(env_states: list[EnvState]):
     def serialize_array(arr, key_path: str = ""):
         if key_path in ["vision_power_map", "sensor_mask", "relic_nodes_mask", "relic_node_configs", "energy_node_fns"]:
             return None
@@ -105,9 +105,30 @@ def env_states_to_dict(env_states: list[EnvState]):
         state = flax.serialization.to_state_dict(state)
         steps.append(serialize_array(state))
 
-    return dict(
-        steps=steps
-    )
+    return steps
+
+def serialize_env_actions(env_actions: list):
+    def serialize_array(arr, key_path: str = ""):
+        if key_path in ["vision_power_map", "sensor_mask", "relic_nodes_mask", "relic_node_configs", "energy_node_fns"]:
+            return None
+        if isinstance(arr, jnp.ndarray):
+            return arr.tolist()
+        elif isinstance(arr, dict):
+            ret = dict()
+            for k, v in arr.items():
+                new_key = key_path + "/" + k if key_path else k
+                new_val = serialize_array(v, new_key)
+                if new_val is not None:
+                    ret[k] = new_val
+            return ret
+
+        return arr
+    steps = []
+    for state in env_actions:
+        state = flax.serialization.to_state_dict(state)
+        steps.append(serialize_array(state))
+
+    return steps
 
 
 @struct.dataclass
@@ -209,14 +230,14 @@ def spawn_unit(
     return state
 
 def set_tile(map_features: MapTile, x: int, y: int, tile_type: int) -> MapTile:
-    return map_features.replace(tile_type=map_features.tile_type.at[x, y, 0].set(tile_type))
+    return map_features.replace(tile_type=map_features.tile_type.at[x, y].set(tile_type))
 
 
 def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     map_features = MapTile(energy=jnp.zeros(
-        shape=(params.map_height, params.map_width, 1), dtype=jnp.int16
+        shape=(params.map_height, params.map_width), dtype=jnp.int16
     ), tile_type=jnp.zeros(
-        shape=(params.map_height, params.map_width, 1), dtype=jnp.int16
+        shape=(params.map_height, params.map_width), dtype=jnp.int16
     ))
     energy_nodes = jnp.zeros(shape=(params.max_energy_nodes, 2), dtype=jnp.int16)
     energy_nodes_mask = jnp.zeros(shape=(params.max_energy_nodes), dtype=jnp.int16)

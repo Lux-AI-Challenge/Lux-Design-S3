@@ -110,11 +110,11 @@ export type FactoryAction = BuildRobotAction | WaterAction;
 export type RobotAction = MoveAction | TransferAction | PickupAction | DigAction | SelfDestructAction | RechargeAction;
 
 export interface Board {
-  rubble: number[][];
-  ore: number[][];
-  ice: number[][];
-  lichen: number[][];
-  strains: number[][];
+  energy: number[][];
+  tileType: number[][];
+  // ice: number[][];
+  // lichen: number[][];
+  // strains: number[][];
 }
 
 export interface Unit {
@@ -122,38 +122,41 @@ export interface Unit {
 
   tile: Tile;
 
-  power: number;
-  cargo: Cargo;
+  // power: number;
+  // cargo: Cargo;
 }
 
-export interface Factory extends Unit {
-  strain: number;
-  action: FactoryAction | null;
+// export interface Factory extends Unit {
+//   strain: number;
+//   action: FactoryAction | null;
 
-  lichen: number;
-}
+//   lichen: number;
+// }
 
 export interface Robot extends Unit {
-  type: RobotType;
-  actionQueue: RobotAction[];
+  // type: RobotType;
+  // actionQueue: RobotAction[];
+  // position: number[];
+  energy: number;
 }
 
 export interface Team {
   name: string;
-  faction: Faction;
+  points: number;
+  // faction: Faction;
 
-  water: number;
-  metal: number;
+  // water: number;
+  // metal: number;
 
-  factories: Factory[];
+  // factories: Factory[];
   robots: Robot[];
 
-  strains: Set<number>;
+  // strains: Set<number>;
 
-  placeFirst: boolean;
-  factoriesToPlace: number;
+  // placeFirst: boolean;
+  // factoriesToPlace: number;
 
-  action: SetupAction | null;
+  // action: SetupAction | null;
 
   error: string | null;
 }

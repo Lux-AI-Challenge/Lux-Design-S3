@@ -41,7 +41,9 @@ export function HomePage(): JSX.Element {
   }, []);
 
   useEffect(() => {
+    // setTimeout(() => {
     load(dummy_episode);
+    // }, 1000)
   }, []);
 
   useEffect(() => {

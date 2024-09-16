@@ -24,59 +24,8 @@ class LuxAIS3Env(environment.Environment):
     @property
     def default_params(self) -> EnvParams:
         return EnvParams()
-
-    def step_env(
-        self,
-        key: chex.PRNGKey,
-        state: EnvState,
-        action: Union[int, float, chex.Array],
-        params: EnvParams,
-    ) -> Tuple[EnvObs, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
-        # state = state.replace() # TODO (stao)
-        action = jnp.stack([action["team_0"], action["team_1"]])
-        ### process unit movement ###
-        # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left
-        # Define movement directions
-        directions = jnp.array(
-            [
-                [0, 0],  # Do nothing
-                [0, -1],  # Move up
-                [1, 0],  # Move right
-                [0, 1],  # Move down
-                [-1, 0],  # Move left
-            ],
-            dtype=jnp.int16,
-        )
-
-        def move_unit(unit: UnitState, action, mask):
-            new_pos = unit.position + directions[action]
-            # Check if the new position is on a map feature of value 2
-            is_blocked = state.map_features.tile_type[new_pos[0], new_pos[1]] == ASTEROID_TILE
-            enough_energy = unit.energy >= params.unit_move_cost
-            # If blocked, keep the original position
-            # new_pos = jnp.where(is_blocked, unit.position, new_pos)
-            # Ensure the new position is within the map boundaries
-            new_pos = jnp.clip(
-                new_pos,
-                0,
-                jnp.array(
-                    [params.map_width - 1, params.map_height - 1], dtype=jnp.int16
-                ),
-            )
-            unit_moved = mask & ~is_blocked & enough_energy
-            # Update the unit's position only if it's active
-            return UnitState(position=jnp.where(unit_moved, new_pos, unit.position), energy=jnp.where(unit_moved, unit.energy - params.unit_move_cost, unit.energy))
-
-        # Move units for both teams
-        state = state.replace(
-            units=jax.vmap(
-                lambda team_units, team_action, team_mask: jax.vmap(move_unit, in_axes=(0, 0, 0))(
-                    team_units, team_action, team_mask
-                ), in_axes=(0, 0, 0)
-            )(state.units, action, state.units_mask)
-        )
-
-        """Compute energy field of the map and apply it to the units"""
+    
+    def compute_energy_features(self, state, params):
         # first compute a array of shape (map_height, map_width, num_energy_nodes) with values equal to the distance of the tile to the energy node
         mm = jnp.meshgrid(jnp.arange(params.map_width), jnp.arange(params.map_height))
         mm = jnp.stack([mm[0], mm[1]]).T # mm[x, y] gives [x, y]
@@ -89,24 +38,9 @@ class LuxAIS3Env(environment.Environment):
         energy_field = jnp.round(energy_field.sum(0))
         energy_field = jnp.clip(energy_field, params.min_energy_per_tile, params.max_energy_per_tile)
         state = state.replace(map_features=state.map_features.replace(energy=energy_field))
-
-        # Update unit energy based on the energy field of their current position
-        def update_unit_energy(unit: UnitState, mask):
-            x, y = unit.position
-            energy_gain = state.map_features.energy[x, y]
-            new_energy = jnp.clip(unit.energy + energy_gain, params.min_unit_energy, params.max_unit_energy)
-            return UnitState(position=unit.position, energy=jnp.where(mask, new_energy, unit.energy))
-
-        # Apply the energy update for all units of both teams
-        state = state.replace(
-            units=jax.vmap(
-                lambda team_units, team_mask: jax.vmap(update_unit_energy)(
-                    team_units, team_mask
-                )
-            )(state.units, state.units_mask)
-        )
-
-
+        return state
+    
+    def compute_sensor_masks(self, state, params):
         """Compute the vision power and sensor mask for both teams 
         
         Algorithm:
@@ -176,6 +110,82 @@ class LuxAIS3Env(environment.Environment):
         sensor_mask = vision_power_map > 0
         state = state.replace(sensor_mask=sensor_mask)
         state = state.replace(vision_power_map=vision_power_map)
+        return state
+
+    def step_env(
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
+    ) -> Tuple[EnvObs, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+        
+        state = self.compute_energy_features(state, params)
+
+        # state = state.replace() # TODO (stao)
+        action = jnp.stack([action["team_0"], action["team_1"]])
+        ### process unit movement ###
+        # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left
+        # Define movement directions
+        directions = jnp.array(
+            [
+                [0, 0],  # Do nothing
+                [0, -1],  # Move up
+                [1, 0],  # Move right
+                [0, 1],  # Move down
+                [-1, 0],  # Move left
+            ],
+            dtype=jnp.int16,
+        )
+
+        def move_unit(unit: UnitState, action, mask):
+            new_pos = unit.position + directions[action]
+            # Check if the new position is on a map feature of value 2
+            is_blocked = state.map_features.tile_type[new_pos[0], new_pos[1]] == ASTEROID_TILE
+            enough_energy = unit.energy >= params.unit_move_cost
+            # If blocked, keep the original position
+            # new_pos = jnp.where(is_blocked, unit.position, new_pos)
+            # Ensure the new position is within the map boundaries
+            new_pos = jnp.clip(
+                new_pos,
+                0,
+                jnp.array(
+                    [params.map_width - 1, params.map_height - 1], dtype=jnp.int16
+                ),
+            )
+            unit_moved = mask & ~is_blocked & enough_energy
+            # Update the unit's position only if it's active
+            return UnitState(position=jnp.where(unit_moved, new_pos, unit.position), energy=jnp.where(unit_moved, unit.energy - params.unit_move_cost, unit.energy))
+
+        # Move units for both teams
+        state = state.replace(
+            units=jax.vmap(
+                lambda team_units, team_action, team_mask: jax.vmap(move_unit, in_axes=(0, 0, 0))(
+                    team_units, team_action, team_mask
+                ), in_axes=(0, 0, 0)
+            )(state.units, action, state.units_mask)
+        )
+
+        """apply energy field to the units"""
+        # Update unit energy based on the energy field of their current position
+        def update_unit_energy(unit: UnitState, mask):
+            x, y = unit.position
+            energy_gain = state.map_features.energy[x, y]
+            new_energy = jnp.clip(unit.energy + energy_gain, params.min_unit_energy, params.max_unit_energy)
+            return UnitState(position=unit.position, energy=jnp.where(mask, new_energy, unit.energy))
+
+        # Apply the energy update for all units of both teams
+        state = state.replace(
+            units=jax.vmap(
+                lambda team_units, team_mask: jax.vmap(update_unit_energy)(
+                    team_units, team_mask
+                )
+            )(state.units, state.units_mask)
+        )
+
+        state = self.compute_sensor_masks(state, params)
+
+        
         # Compute relic scores
         def compute_relic_score(unit, relic_nodes_map_weights, mask):
             total_score = relic_nodes_map_weights[unit[1], unit[0]]
@@ -226,6 +236,8 @@ class LuxAIS3Env(environment.Environment):
         """Reset environment state by sampling initial position."""
 
         state = gen_state(key=key, params=params)
+        state = self.compute_energy_features(state, params)
+        state = self.compute_sensor_masks(state, params)
 
         return self.get_obs(state, params=params, key=key), state
 

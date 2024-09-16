@@ -1,6 +1,6 @@
 import { useHover, useMergedRef, useMouse } from '@mantine/hooks';
 import { useCallback, useEffect, useState } from 'react';
-import { Factory, Robot, RobotType, Step, Tile } from '../../episode/model';
+import { Robot, Step, Tile } from '../../episode/model';
 import { useStore } from '../../store';
 import { getTeamColor } from '../../utils/colors';
 
@@ -19,7 +19,7 @@ type Config = SizeConfig & ThemeConfig;
 
 function getSizeConfig(maxWidth: number, step: Step): SizeConfig {
   const gutterSize = 1;
-  const tilesPerSide = step.board.rubble.length;
+  const tilesPerSide = step.board.energy.length;
 
   let tileSize = Math.floor(Math.sqrt(maxWidth));
   let boardSize = tileSize * tilesPerSide + gutterSize * (tilesPerSide + 1);
@@ -44,21 +44,14 @@ function tileToCanvas(sizes: SizeConfig, tile: Tile): [number, number] {
   ];
 }
 
-function scale(value: number, relativeMin: number, relativeMax: number): number {
-  const clampedValue = Math.max(Math.min(value, relativeMax), relativeMin);
-  return (clampedValue - relativeMin) / (relativeMax - relativeMin);
-}
+// function scale(value: number, relativeMin: number, relativeMax: number): number {
+//   const clampedValue = Math.max(Math.min(value, relativeMax), relativeMin);
+//   return (clampedValue - relativeMin) / (relativeMax - relativeMin);
+// }
 
 function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step: Step): void {
   const board = step.board;
   const isDay = step.step < 0 || step.step % 50 < 30;
-
-  const teamStrains = new Map<number, number>();
-  for (let i = 0; i < 2; i++) {
-    for (const strain of step.teams[i].strains) {
-      teamStrains.set(strain, i);
-    }
-  }
 
   for (let tileY = 0; tileY < config.tilesPerSide; tileY++) {
     for (let tileX = 0; tileX < config.tilesPerSide; tileX++) {
@@ -68,62 +61,27 @@ function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step
       ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
 
       let color: string;
-      if (board.ice[tileY][tileX] > 0) {
-        color = '#48dbfb';
-      } else if (board.ore[tileY][tileX] > 0) {
+      if (board.tileType[tileY][tileX] == 1) {
+        color = '#5B5F97';
+      } else if (board.tileType[tileY][tileX] == 2) {
         color = '#2c3e50';
       } else {
         const rgb = isDay ? 150 : 75;
-        const base = isDay ? 0.1 : 0.2;
-        color = `rgba(${rgb}, ${rgb}, ${rgb}, ${base + scale(board.rubble[tileY][tileX], 0, 100) * (1 - base)})`;
+        // const base = isDay ? 0.1 : 0.2;
+        color = `rgba(${rgb}, ${rgb}, ${rgb}, 1)`;
       }
 
       ctx.fillStyle = color;
       ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
 
-      const lichen = board.lichen[tileY][tileX];
-      if (lichen > 0) {
-        const team = teamStrains.get(board.strains[tileY][tileX])!;
-        ctx.fillStyle = getTeamColor(team, 0.1 + scale(lichen, 0, 100) * 0.4);
-        ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
-      }
+      // const lichen = board.lichen[tileY][tileX];
+      // if (lichen > 0) {
+      //   const team = teamStrains.get(board.strains[tileY][tileX])!;
+      //   ctx.fillStyle = getTeamColor(team, 0.1 + scale(lichen, 0, 100) * 0.4);
+      //   ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+      // }
     }
   }
-
-  ctx.restore();
-}
-
-function drawFactory(
-  ctx: CanvasRenderingContext2D,
-  config: Config,
-  factory: Factory,
-  team: number,
-  selectedTile: Tile | null,
-): void {
-  const [canvasX, canvasY] = tileToCanvas(config, {
-    x: factory.tile.x - 1,
-    y: factory.tile.y - 1,
-  });
-
-  const size = config.tileSize * 3 + config.gutterSize * 2;
-  const isSelected =
-    selectedTile !== null &&
-    Math.abs(factory.tile.x - selectedTile.x) <= 1 &&
-    Math.abs(factory.tile.y - selectedTile.y) <= 1;
-
-  const borderSize = 2;
-
-  ctx.fillStyle = 'white';
-  ctx.fillRect(canvasX, canvasY, size, size);
-
-  ctx.fillStyle = getTeamColor(team, 0.75);
-  ctx.fillRect(canvasX, canvasY, size, size);
-
-  ctx.fillStyle = isSelected ? 'black' : getTeamColor(team, 1.0);
-  ctx.fillRect(canvasX, canvasY, size, borderSize);
-  ctx.fillRect(canvasX, canvasY, borderSize, size);
-  ctx.fillRect(canvasX, canvasY + size - borderSize, size, borderSize);
-  ctx.fillRect(canvasX + size - borderSize, canvasY, borderSize, size);
 
   ctx.restore();
 }
@@ -139,32 +97,16 @@ function drawRobot(
 
   const isSelected = selectedTile !== null && robot.tile.x === selectedTile.x && robot.tile.y === selectedTile.y;
 
-  if (robot.type === RobotType.Light) {
-    ctx.fillStyle = getTeamColor(team, 1.0);
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = isSelected ? 2 : 1;
+  ctx.fillStyle = getTeamColor(team, 1.0);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = isSelected ? 2 : 1;
 
-    const radius = config.tileSize / 2 - 1;
+  const radius = config.tileSize / 2 - 1;
 
-    ctx.beginPath();
-    ctx.arc(canvasX + config.tileSize / 2, canvasY + config.tileSize / 2, radius, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
-  } else {
-    const borderSize = isSelected ? 1 : 2;
-
-    ctx.fillStyle = 'black';
-    ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
-
-    ctx.fillStyle = getTeamColor(team, 1.0);
-    ctx.fillRect(
-      canvasX + borderSize,
-      canvasY + borderSize,
-      config.tileSize - borderSize * 2,
-      config.tileSize - borderSize * 2,
-    );
-  }
-
+  ctx.beginPath();
+  ctx.arc(canvasX + config.tileSize / 2, canvasY + config.tileSize / 2, radius, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -214,10 +156,6 @@ function drawBoard(ctx: CanvasRenderingContext2D, config: Config, step: Step, se
   drawTileBackgrounds(ctx, config, step);
 
   for (let i = 0; i < 2; i++) {
-    for (const factory of step.teams[i].factories) {
-      drawFactory(ctx, config, factory, i, selectedTile);
-    }
-
     for (const robot of step.teams[i].robots) {
       drawRobot(ctx, config, robot, i, selectedTile);
     }

@@ -1,14 +1,12 @@
 import { Badge, Grid, MantineShadow, Paper, Space, Tabs, Title } from '@mantine/core';
 import { IconCrown } from '@tabler/icons';
 import { useCallback, useMemo } from 'react';
-import { Episode, Faction, RobotType, SetupAction, Unit } from '../../episode/model';
-import { getFactoryTiles } from '../../episode/utils';
+import { Episode, Unit } from '../../episode/model';
 import { useStore } from '../../store';
 import { getTeamColor } from '../../utils/colors';
-import { FactoryDetail } from './FactoryDetail';
 import { RobotDetail } from './RobotDetail';
 import { UnitList } from './UnitList';
-import { funcLichen } from './VisualizerPage';
+import { funcPoints } from './VisualizerPage';
 
 export function getWinnerInfo(episode: Episode, team: number): [won: boolean, reason: string | null] {
   const lastStep = episode.steps[episode.steps.length - 1];
@@ -19,8 +17,8 @@ export function getWinnerInfo(episode: Episode, team: number): [won: boolean, re
   const meError = episode.steps.map(step => step.teams[team].error).some(error => error !== null);
   const opponentError = episode.steps.map(step => step.teams[team === 0 ? 1 : 0].error).some(error => error !== null);
 
-  const meLichen = funcLichen(me, lastStep.board);
-  const opponentLichen = funcLichen(opponent, lastStep.board);
+  const mePoints = funcPoints(me, lastStep.board);
+  const opponentPoints = funcPoints(opponent, lastStep.board);
 
   if (meError && opponentError) {
     return [true, 'Draw, both teams errored'];
@@ -28,21 +26,21 @@ export function getWinnerInfo(episode: Episode, team: number): [won: boolean, re
     return [false, null];
   } else if (!meError && opponentError) {
     return [true, 'Winner by opponent error'];
-  } else if (me.faction !== Faction.None && opponent.faction === Faction.None) {
-    return [true, 'Winner by opponent error'];
-  } else if (me.faction === Faction.None && opponent.faction !== Faction.None) {
-    return [false, null];
-  } else if (me.factories.length === 0 && opponent.factories.length === 0) {
-    return [true, 'Draw, all factories destroyed'];
-  } else if (me.factories.length > 0 && opponent.factories.length === 0) {
-    return [true, 'Winner by factory elimination'];
-  } else if (me.factories.length === 0 && opponent.factories.length > 0) {
-    return [false, null];
+    // } else if (me.faction !== Faction.None && opponent.faction === Faction.None) {
+    //   return [true, 'Winner by opponent error'];
+    // } else if (me.faction === Faction.None && opponent.faction !== Faction.None) {
+    //   return [false, null];
+    // } else if (me.factories.length === 0 && opponent.factories.length === 0) {
+    //   return [true, 'Draw, all factories destroyed'];
+    // } else if (me.factories.length > 0 && opponent.factories.length === 0) {
+    //   return [true, 'Winner by factory elimination'];
+    // } else if (me.factories.length === 0 && opponent.factories.length > 0) {
+    //   return [false, null];
   } else if (lastStep.step === 1000) {
-    if (meLichen > opponentLichen) {
-      return [true, 'Winner by lichen'];
-    } else if (meLichen === opponentLichen) {
-      return [true, 'Draw, same lichen'];
+    if (mePoints > opponentPoints) {
+      return [true, 'Winner by points'];
+    } else if (mePoints === opponentPoints) {
+      return [true, 'Draw, same points'];
     } else {
       return [false, null];
     }
@@ -62,32 +60,6 @@ function compareUnits(a: Unit, b: Unit): number {
   return partsA[0].localeCompare(partsB[0]);
 }
 
-function formatFaction(faction: Faction): string {
-  switch (faction) {
-    case Faction.None:
-      return 'No Faction';
-    case Faction.AlphaStrike:
-      return 'Alpha Strike';
-    case Faction.MotherMars:
-      return 'Mother Mars';
-    case Faction.TheBuilders:
-      return 'The Builders';
-    case Faction.FirstMars:
-      return 'First Mars';
-  }
-}
-
-function formatAction(action: SetupAction): string {
-  switch (action.type) {
-    case 'bid':
-      return `Bid ${action.bid} and choose ${formatFaction(action.faction)} faction`;
-    case 'buildFactory':
-      return `Build factory on (${action.center.x}, ${action.center.y}) with ${action.water} water and ${action.metal} metal`;
-    case 'wait':
-      return 'None';
-  }
-}
-
 interface TeamCardProps {
   id: number;
   tabHeight: number;
@@ -103,12 +75,12 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
 
   const [isWinner, winnerReason] = getWinnerInfo(episode, id);
 
-  const sortedFactories = useMemo(() => team.factories.sort(compareUnits), [team]);
-  const factoryRenderer = useCallback(
-    (index: number) => <FactoryDetail factory={sortedFactories[index]} />,
-    [sortedFactories],
-  );
-  const factoryTileGetter = useCallback((index: number) => getFactoryTiles(sortedFactories[index]), [sortedFactories]);
+  // const sortedFactories = useMemo(() => team.factories.sort(compareUnits), [team]);
+  // const factoryRenderer = useCallback(
+  //   (index: number) => <FactoryDetail factory={sortedFactories[index]} />,
+  //   [sortedFactories],
+  // );
+  // const factoryTileGetter = useCallback((index: number) => getFactoryTiles(sortedFactories[index]), [sortedFactories]);
 
   const sortedRobots = useMemo(() => team.robots.sort(compareUnits), [team]);
   const robotRenderer = useCallback((index: number) => <RobotDetail robot={sortedRobots[index]} />, [sortedRobots]);
@@ -124,7 +96,7 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
         {team.name}
       </Title>
 
-      <Badge color="dark">{formatFaction(team.faction)}</Badge>
+      <Badge color="dark">{team.name}</Badge>
       {isWinner && (
         <Badge color={id === 0 ? 'blue' : 'red'} ml={8}>
           {winnerReason}
@@ -134,17 +106,11 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
       <Space h="xs" />
 
       <Grid columns={2} gutter={0}>
-        <Grid.Col span={1}>
+        {/* <Grid.Col span={1}>
           <b>Lichen:</b> {funcLichen(team, step.board)}
-        </Grid.Col>
+        </Grid.Col> */}
         <Grid.Col span={1}>
-          <b>Light robots:</b> {sortedRobots.filter(robot => robot.type === RobotType.Light).length}
-        </Grid.Col>
-        <Grid.Col span={1}>
-          <b>Factories:</b> {sortedFactories.length}
-        </Grid.Col>
-        <Grid.Col span={1}>
-          <b>Heavy robots:</b> {sortedRobots.filter(robot => robot.type === RobotType.Heavy).length}
+          <b>Ships:</b> {sortedRobots.length}
         </Grid.Col>
         {team.error && (
           <Grid.Col span={2}>
@@ -155,9 +121,9 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
         {step.step < 0 && (
           <>
             <Grid.Col span={1}>
-              <b>Water:</b> {team.water}
+              <b>Points:</b> {team.points}
             </Grid.Col>
-            <Grid.Col span={1}>
+            {/* <Grid.Col span={1}>
               <b>Metal:</b> {team.metal}
             </Grid.Col>
             <Grid.Col span={1}>
@@ -168,19 +134,19 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
             </Grid.Col>
             <Grid.Col span={2}>
               <b>Action:</b> {team.action !== null ? formatAction(team.action) : 'None'}
-            </Grid.Col>
+            </Grid.Col> */}
           </>
         )}
       </Grid>
 
       <Space h="xs" />
 
-      <Tabs defaultValue="factories" keepMounted={false} color={id === 0 ? 'blue' : 'red'}>
+      <Tabs defaultValue="robots" keepMounted={false} color={id === 0 ? 'blue' : 'red'}>
         <Tabs.List mb="xs" grow>
-          <Tabs.Tab value="factories">Factories</Tabs.Tab>
+          {/* <Tabs.Tab value="factories">Factories</Tabs.Tab> */}
           <Tabs.Tab value="robots">Robots</Tabs.Tab>
         </Tabs.List>
-
+        {/* 
         <Tabs.Panel value="factories">
           <UnitList
             name="factories"
@@ -189,7 +155,7 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
             itemRenderer={factoryRenderer}
             tileGetter={factoryTileGetter}
           />
-        </Tabs.Panel>
+        </Tabs.Panel> */}
         <Tabs.Panel value="robots">
           <UnitList
             name="robots"
