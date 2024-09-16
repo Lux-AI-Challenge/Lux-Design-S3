@@ -1,5 +1,6 @@
 import {
   Board,
+  EnvParams,
   Episode,
   EpisodeMetadata,
   Faction,
@@ -280,16 +281,19 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       // console.log(obs);
       const robots: Robot[] = [];
       // TODO: might not use a mask in the future.
+      console.log(obs.units_mask);
       for (let unitIdx = 0; unitIdx < obs.units_mask.length; unitIdx++) {
         // const rawRobot = obs.units[unit_idx];
-        robots.push({
-          unitId: `unit_${unitIdx}`,
-          tile: {
-            x: obs.units.position[j][unitIdx][0],
-            y: obs.units.position[j][unitIdx][1],
-          },
-          energy: obs.units.energy[j][unitIdx],
-        });
+        if (obs.units_mask[j][unitIdx]) {
+          robots.push({
+            unitId: `unit_${unitIdx}`,
+            tile: {
+              x: obs.units.position[j][unitIdx][0],
+              y: obs.units.position[j][unitIdx][1],
+            },
+            energy: obs.units.energy[j][unitIdx],
+          });
+        }
       }
       // for (const unitId of Object.keys(obs.units[playerId])) {
       //   const rawRobot = obs.units[playerId][unitId];
@@ -343,6 +347,10 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       teams: teams as [Team, Team],
     });
   }
+  console.log(steps);
+  return { steps, metadata, params: data.params };
+}
 
-  return { steps, metadata };
+export function getMatchIdx(step: number, envParams: EnvParams): number {
+  return Math.floor(step / envParams.max_steps_in_match);
 }

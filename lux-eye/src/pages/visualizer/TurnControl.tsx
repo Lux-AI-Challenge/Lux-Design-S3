@@ -12,6 +12,7 @@ import {
   IconPlayerTrackPrev,
 } from '@tabler/icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getMatchIdx } from '../../episode/luxai';
 import { useStore } from '../../store';
 
 const SPEEDS = [0.5, 1, 2, 4, 8, 16, 32];
@@ -51,8 +52,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
     const gradientParts: [string, number, number][] = [];
 
     for (const step of episode.steps) {
-      const isDay = step.step < 0 || step.step % 50 < 30;
-
+      const isDay = getMatchIdx(step.step, episode.params) % 2 === 0;
       const color = isDay ? '#e9ecef' : '#bdc3c7';
 
       if (gradientParts.length === 0) {
@@ -231,8 +231,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
   useHotkeys(hotkeys);
 
   const step = episode.steps[turn];
-  const isDay = step.step < 0 || step.step % 50 < 30;
-
+  const matchIdx = getMatchIdx(step.step, episode.params);
   return (
     <Stack spacing="xs">
       <Slider
@@ -286,7 +285,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
       </Group>
 
       <Group position="apart">
-        <Text>{isDay ? 'Day' : 'Night'}</Text>
+        <Text>{`Match ${matchIdx + 1} / ${episode.params.match_count_per_episode}`}</Text>
         {episode.metadata.seed && <Text>Seed: {episode.metadata.seed}</Text>}
         {selectedTile !== null && (
           <Text>

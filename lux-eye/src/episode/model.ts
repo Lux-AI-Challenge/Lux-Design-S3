@@ -170,7 +170,36 @@ export interface Step {
 export interface Episode {
   steps: Step[];
   metadata: EpisodeMetadata;
+  params: EnvParams;
 }
+/* eslint-disable */
+
+export interface EnvParams {
+  max_steps_in_match: number;
+  map_type: string;
+  map_width: number;
+  map_height: number;
+  num_teams: number;
+  match_count_per_episode: number;
+  max_units: number;
+  init_unit_energy: number;
+  min_unit_energy: number;
+  max_unit_energy: number;
+  unit_move_cost: number;
+  unit_sap_cost: number;
+  unit_sap_drain: number;
+  unit_sap_range: number;
+  max_energy_nodes: number;
+  max_energy_per_tile: number;
+  min_energy_per_tile: number;
+  max_relic_nodes: number;
+  relic_config_size: number;
+  fog_of_war: boolean;
+  unit_sensor_range: number;
+  nebula_tile_vision_reduction: number;
+}
+/* eslint-enable */
+
 export interface EpisodeMetadata {
   teamNames: [string, string];
   seed?: number;

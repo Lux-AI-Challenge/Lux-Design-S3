@@ -41,7 +41,7 @@ if __name__ == "__main__":
     states.append(state)
     print("Benchmarking time")
     stime = time.time()
-    N = 1000
+    N = env_params.max_steps_in_match * env_params.match_count_per_episode
     for _ in range(N):
         key, subkey = jax.random.split(key)
         action = env.action_space(env_params).sample(subkey)

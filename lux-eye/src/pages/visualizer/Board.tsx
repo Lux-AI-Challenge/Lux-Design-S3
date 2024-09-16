@@ -1,6 +1,6 @@
 import { useHover, useMergedRef, useMouse } from '@mantine/hooks';
 import { useCallback, useEffect, useState } from 'react';
-import { Robot, Step, Tile } from '../../episode/model';
+import { EnvParams, Robot, Step, Tile } from '../../episode/model';
 import { useStore } from '../../store';
 import { getTeamColor } from '../../utils/colors';
 
@@ -49,9 +49,9 @@ function tileToCanvas(sizes: SizeConfig, tile: Tile): [number, number] {
 //   return (clampedValue - relativeMin) / (relativeMax - relativeMin);
 // }
 
-function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step: Step): void {
+function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step: Step, envParams: EnvParams): void {
   const board = step.board;
-  const isDay = step.step < 0 || step.step % 50 < 30;
+  const isAlternateMatch = (step.step % envParams.max_steps_in_match) * 2 < 50;
 
   for (let tileY = 0; tileY < config.tilesPerSide; tileY++) {
     for (let tileX = 0; tileX < config.tilesPerSide; tileX++) {
@@ -66,7 +66,7 @@ function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step
       } else if (board.tileType[tileY][tileX] == 2) {
         color = '#2c3e50';
       } else {
-        const rgb = isDay ? 150 : 75;
+        const rgb = isAlternateMatch ? 150 : 75;
         // const base = isDay ? 0.1 : 0.2;
         color = `rgba(${rgb}, ${rgb}, ${rgb}, 1)`;
       }
@@ -146,14 +146,20 @@ function drawSelectedTile(ctx: CanvasRenderingContext2D, config: Config, selecte
   ctx.restore();
 }
 
-function drawBoard(ctx: CanvasRenderingContext2D, config: Config, step: Step, selectedTile: Tile | null): void {
+function drawBoard(
+  ctx: CanvasRenderingContext2D,
+  config: Config,
+  step: Step,
+  envParams: EnvParams,
+  selectedTile: Tile | null,
+): void {
   ctx.save();
 
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, config.boardSize, config.boardSize);
   ctx.restore();
 
-  drawTileBackgrounds(ctx, config, step);
+  drawTileBackgrounds(ctx, config, step, envParams);
 
   for (let i = 0; i < 2; i++) {
     for (const robot of step.teams[i].robots) {
@@ -191,6 +197,7 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
   });
 
   const step = episode!.steps[turn];
+  const envParams = episode!.params;
 
   const onMouseLeave = useCallback(() => {
     setSelectedTile(null, true);
@@ -243,8 +250,8 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
       minimalTheme,
     };
 
-    drawBoard(ctx, config, step, selectedTile);
-  }, [step, sizeConfig, selectedTile, minimalTheme]);
+    drawBoard(ctx, config, step, envParams, selectedTile);
+  }, [step, envParams, sizeConfig, selectedTile, minimalTheme]);
 
   return (
     <canvas ref={canvasRef} width={sizeConfig.boardSize} height={sizeConfig.boardSize} onMouseLeave={onMouseLeave} />
