@@ -246,7 +246,7 @@ class LuxAIS3Env(environment.Environment):
 
         return self.get_obs(state, params=params, key=key), state
 
-    @functools.partial(jax.jit, static_argnums=(0,4))
+    @functools.partial(jax.jit, static_argnums=(0, 4))
     def step(
         self,
         key: chex.PRNGKey,
@@ -263,13 +263,14 @@ class LuxAIS3Env(environment.Environment):
         obs_st, state_st, reward, terminated, truncated, info = self.step_env(
             key, state, action, params
         )
+        info["final_state"] = state_st
+        info["final_observation"] = obs_st
         if self.auto_reset:
             done = terminated | truncated
             obs_re, state_re = self.reset_env(key_reset, params)
             state = jax.tree_map(
                 lambda x, y: jax.lax.select(done, x, y), state_re, state_st
             )
-            info["final_observation"] = obs_st
             obs = jax.lax.select(done, obs_re, obs_st)
         else:
             obs = obs_st

@@ -1,13 +1,14 @@
 from flax import struct
 
+MAP_TYPES = ["dev0", "random"]
 
 @struct.dataclass
 class EnvParams:
     max_steps_in_match: int = 100
-    map_type: str = "random"
+    map_type: int = 0
     """Map generation algorithm. Can change between games"""
-    map_width: int = 16
-    map_height: int = 16
+    map_width: int = 24
+    map_height: int = 24
     num_teams: int = 2
     match_count_per_episode: int = 5
     """number of matches to play in one episode"""
@@ -18,7 +19,7 @@ class EnvParams:
     min_unit_energy: int = 0
     max_unit_energy: int = 400
     unit_move_cost: int = 2
-    spawn_rate: int = 4
+    spawn_rate: int = 5
 
 
     unit_sap_cost: int = 10
@@ -61,3 +62,23 @@ class EnvParams:
     The nebula tile vision reduction is the amount of vision reduction a nebula tile provides.
     A tile can be seen if the vision power over it is > 0.
     """
+    
+    
+    nebula_tile_drift_speed: int = 1
+    """
+    how fast nebula tiles drift in one of the diagonal directions over time
+    """
+    
+    energy_node_drift_speed: int = 1
+    """
+    how fast energy nodes will move around over time
+    """
+
+env_params_ranges = dict(
+    map_type=["random"],
+    unit_move_cost=list(range(1, 6)),
+    sensor_range=list(range(1, 4)),
+    nebula_tile_vision_reduction=list(range(0,4)),
+    unit_sap_amount=list(range(10, 51)),
+    unit_sap_range=list(range(3, 9))
+)
