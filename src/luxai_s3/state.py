@@ -317,22 +317,18 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     highest_positions = highest_positions.astype(jnp.int16)
     # Set relic nodes to the positions of highest noise values
     relic_nodes = relic_nodes.at[0, :].set(highest_positions[0])
-    relic_nodes_mask = relic_nodes_mask.at[0].set(1)
+    relic_nodes_mask = relic_nodes_mask.at[0].set(True)
     relic_nodes = relic_nodes.at[1, :].set(highest_positions[1])
-    relic_nodes_mask = relic_nodes_mask.at[1].set(1)
+    relic_nodes_mask = relic_nodes_mask.at[1].set(True)
     mirrored_pos1 = jnp.array([params.map_width - highest_positions[0][1], params.map_height - highest_positions[0][0]], dtype=jnp.int16)
     mirrored_pos2 = jnp.array([params.map_width - highest_positions[1][1], params.map_height - highest_positions[1][0]], dtype=jnp.int16)
     # Set the mirrored positions for the other two relic nodes
     relic_nodes = relic_nodes.at[2, :].set(mirrored_pos1)
-    relic_nodes_mask = relic_nodes_mask.at[2].set(1)
+    relic_nodes_mask = relic_nodes_mask.at[2].set(True)
     relic_nodes = relic_nodes.at[3, :].set(mirrored_pos2)
-    relic_nodes_mask = relic_nodes_mask.at[3].set(1)
+    relic_nodes_mask = relic_nodes_mask.at[3].set(True)
     relic_node_configs = relic_node_configs.at[2].set(relic_node_configs[0])
     relic_node_configs = relic_node_configs.at[3].set(relic_node_configs[1])
-    # Reset the remaining relic nodes to zero and update their masks
-    # for i in range(2, params.max_relic_nodes):
-    #     relic_nodes = relic_nodes.at[i, :].set(jnp.array([0, 0], dtype=jnp.int16))
-    #     relic_nodes_mask = relic_nodes_mask.at[i].set(0)
     return dict(
         map_features=map_features,
         energy_nodes=energy_nodes,
