@@ -36,7 +36,7 @@ export function getWinnerInfo(episode: Episode, team: number): [won: boolean, re
     //   return [true, 'Winner by factory elimination'];
     // } else if (me.factories.length === 0 && opponent.factories.length > 0) {
     //   return [false, null];
-  } else if (lastStep.step === 1000) {
+  } else if (lastStep.step === episode.params.max_steps_in_match * episode.params.match_count_per_episode) {
     if (mePoints > opponentPoints) {
       return [true, 'Winner by points'];
     } else if (mePoints === opponentPoints) {
