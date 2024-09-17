@@ -6,11 +6,11 @@ from luxai_s3.params import EnvParams
 from luxai_s3.wrappers import LuxAIS3GymEnv, RecordEpisode
 if __name__ == "__main__":
     import numpy as np
-    np.random.seed(1)
+    np.random.seed(2)
     env = LuxAIS3GymEnv()
     env = RecordEpisode(env, save_dir="episodes")
     env_params = EnvParams(map_type=0, max_steps_in_match=100)
-    obs, info = env.reset(seed=0, options=dict(params=env_params))
+    obs, info = env.reset(seed=1, options=dict(params=env_params))
     
     print("Benchmarking time")
     stime = time.time()

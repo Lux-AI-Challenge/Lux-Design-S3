@@ -78,6 +78,8 @@ class EnvParams:
     how fast energy nodes will move around over time
     """
     energy_node_drift_magnitude: int = 5
+    
+    # option to change sap configurations
 
 env_params_ranges = dict(
     map_type=["random"],
@@ -87,4 +89,5 @@ env_params_ranges = dict(
     nebula_tile_energy_reduction=[0, 10, 100],
     unit_sap_amount=list(range(10, 51)),
     unit_sap_range=list(range(3, 9)),
+    unit_sap_dropoff_factor=[0.5, 1],
 )
