@@ -169,7 +169,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
     } else if (i < data.actions.length) {
       actions = data.actions[i];
     }
-
+    console.log(obs.relic_nodes);
     const board: Board = {
       energy: obs.map_features.energy,
       tileType: obs.map_features.tile_type,
