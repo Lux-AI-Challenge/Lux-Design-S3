@@ -87,10 +87,12 @@ class EnvState:
 
 def serialize_env_states(env_states: list[EnvState]):
     def serialize_array(root: EnvState, arr, key_path: str = ""):
-        if key_path in ["vision_power_map", "relic_nodes_mask", "energy_node_fns"]:
+        if key_path in ["vision_power_map", "relic_nodes_mask", "energy_node_fns", "relic_nodes_map_weights"]:
             return None
         if key_path == "relic_nodes":
             return root.relic_nodes[root.relic_nodes_mask].tolist()
+        if key_path == "energy_nodes":
+            return root.energy_nodes[root.energy_nodes_mask].tolist()
         if isinstance(arr, jnp.ndarray):
             return arr.tolist()
         elif isinstance(arr, dict):
@@ -101,7 +103,7 @@ def serialize_env_states(env_states: list[EnvState]):
                 if new_val is not None:
                     ret[k] = new_val
             return ret
-
+# TODO (stao): to optimize save file we can store deltas of map info instead. might not be able to do this with kaggle replays though.
         return arr
     steps = []
     for state in env_states:
@@ -295,12 +297,21 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     # elif params.map_type == "random":
     # Apply the nebula tiles to the map_features
     # map_features = map_features.replace(tile_type=jnp.where(nebula_map, NEBULA_TILE, EMPTY_TILE))
-    noise = generate_perlin_noise_2d( (params.map_height, params.map_width), (4, 4))
-    noise = jnp.where(noise > 0.5, 1, 0)
+    perlin_noise = generate_perlin_noise_2d( (params.map_height, params.map_width), (4, 4))
+    noise = jnp.where(perlin_noise > 0.5, 1, 0)
     noise = noise | noise.T
     # Flip the noise matrix's rows and columns in reverse
     noise = noise[::-1, ::1]
+    
     map_features = map_features.replace(tile_type=jnp.where(noise, NEBULA_TILE, 0))
+    
+    noise = jnp.where(perlin_noise < -0.6, 1, 0)
+    noise = noise | noise.T
+    # Flip the noise matrix's rows and columns in reverse
+    noise = noise[::-1, ::1]
+    # jax.debug.breakpoint()
+    map_features = map_features.replace(tile_type=jnp.place(map_features.tile_type, noise, 2, inplace=False))
+    
     noise = generate_perlin_noise_2d( (params.map_height, params.map_width), (4, 4))
     # Find the positions of the two highest noise values
     flat_indices = jnp.argsort(noise.ravel())[-2:]  # Get indices of two highest values

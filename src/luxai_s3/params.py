@@ -64,16 +64,17 @@ class EnvParams:
     """
     
     
-    nebula_tile_drift_speed: float = -0.2
+    nebula_tile_drift_speed: float = -0.05
     """
     how fast nebula tiles drift in one of the diagonal directions over time. If positive, flows to the top/right, negative flows to bottom/left
     """
     # TODO (stao): allow other kinds of symmetric drifts?
     
-    energy_node_drift_speed: int = 0.1
+    energy_node_drift_speed: int = 0.02
     """
     how fast energy nodes will move around over time
     """
+    energy_node_drift_magnitude: int = 5
 
 env_params_ranges = dict(
     map_type=["random"],

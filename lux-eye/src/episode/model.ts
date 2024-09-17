@@ -116,6 +116,7 @@ export type RobotAction = MoveAction | TransferAction | PickupAction | DigAction
 
 export interface Board {
   energy: number[][];
+  energyNodes: number[][];
   tileType: number[][];
   relicNodes: number[][];
   relicNodeConfigs: number[][][];

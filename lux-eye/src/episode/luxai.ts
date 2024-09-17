@@ -172,6 +172,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
     console.log(obs.relic_nodes);
     const board: Board = {
       energy: obs.map_features.energy,
+      energyNodes: obs.energy_nodes,
       tileType: obs.map_features.tile_type,
       relicNodes: obs.relic_nodes,
       relicNodeConfigs: obs.relic_node_configs,

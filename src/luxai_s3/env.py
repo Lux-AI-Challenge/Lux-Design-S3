@@ -187,9 +187,17 @@ class LuxAIS3Env(environment.Environment):
         
         # Shift objects around in space
         # Move the nebula tiles in state.map_features.tile_types up by 1 and to the right by 1
+        # this is also symmetric nebula tile movement
         new_tile_types_map = jnp.roll(state.map_features.tile_type, shift=(1 * jnp.sign(params.nebula_tile_drift_speed), -1 * jnp.sign(params.nebula_tile_drift_speed)), axis=(0, 1))
         new_tile_types_map = jnp.where(state.steps * params.nebula_tile_drift_speed % 1 == 0, new_tile_types_map, state.map_features.tile_type)
-        new_energy_nodes = jnp.where(state.steps * params.energy_node_drift_speed % 1 == 0, state.energy_nodes + jnp.array([1 * jnp.sign(params.energy_node_drift_speed), -1 * jnp.sign(params.energy_node_drift_speed)]), state.energy_nodes)
+        # new_energy_nodes = state.energy_nodes + jnp.array([1 * jnp.sign(params.energy_node_drift_speed), -1 * jnp.sign(params.energy_node_drift_speed)])
+        
+        energy_node_deltas = jnp.round(jax.random.uniform(key=key, shape=(params.max_energy_nodes, 2), minval=-params.energy_node_drift_magnitude, maxval=params.energy_node_drift_magnitude)).astype(jnp.int16)
+        # TODO symmetric movement
+        # energy_node_deltas = jnp.round(jax.random.uniform(key=key, shape=(params.max_energy_nodes // 2, 2), minval=-params.energy_node_drift_magnitude, maxval=params.energy_node_drift_magnitude)).astype(jnp.int16)
+        # energy_node_deltas = jnp.concatenate((energy_node_deltas, energy_node_deltas[::-1]))
+        new_energy_nodes = jnp.clip(state.energy_nodes + energy_node_deltas, min=jnp.array([0, 0]), max=jnp.array([params.map_width, params.map_height]))
+        new_energy_nodes = jnp.where(state.steps * params.energy_node_drift_speed % 1 == 0, new_energy_nodes, state.energy_nodes)
         state = state.replace(map_features=state.map_features.replace(tile_type=new_tile_types_map), energy_nodes=new_energy_nodes)
 
         
