@@ -36,6 +36,9 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
   const openInNewTab = useStore(state => state.openInNewTab);
 
+  const displayConfig = useStore(state => state.displayConfig);
+  const setDisplayConfig = useStore(state => state.setDisplayConfig);
+
   /* const minimalTheme = useStore(state => state.minimalTheme);
   const setTheme = useStore(state => state.setTheme); */
 
@@ -109,6 +112,27 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
     setPlaying(!playing);
   }, [episode, turn, playing]);
+
+  const toggleEnergyFieldDisplay = useCallback(() => {
+    setDisplayConfig({
+      ...displayConfig,
+      energyField: !displayConfig.energyField,
+    });
+  }, [displayConfig]);
+
+  const toggleRelicConfigDisplay = useCallback(() => {
+    setDisplayConfig({
+      ...displayConfig,
+      relicConfigs: !displayConfig.relicConfigs,
+    });
+  }, [displayConfig]);
+
+  const toggleSensorMaskDisplay = useCallback(() => {
+    setDisplayConfig({
+      ...displayConfig,
+      sensorMask: !displayConfig.sensorMask,
+    });
+  }, [displayConfig]);
 
   const previousTurn = useCallback(() => {
     if (turn > 0 && !sliderRef.current?.contains(document.activeElement)) {
@@ -228,6 +252,9 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
     ['ArrowRight', nextTurn],
     ['ArrowUp', increaseSpeed],
     ['ArrowDown', decreaseSpeed],
+    ['e', toggleEnergyFieldDisplay],
+    ['r', toggleRelicConfigDisplay],
+    ['s', toggleSensorMaskDisplay],
   ];
 
   for (let i = 1; i <= SPEEDS.length; i++) {
@@ -303,6 +330,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
       {selectedTile !== null && (
         <Group position="apart">
           <Text>Tile Type: {parseTileType(step.board.tileType[selectedTile.x][selectedTile.y])}</Text>
+          <Text>Energy: {step.board.energy[selectedTile.x][selectedTile.y]}</Text>
         </Group>
       )}
 

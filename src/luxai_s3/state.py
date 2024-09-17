@@ -86,7 +86,7 @@ class EnvState:
 
 def serialize_env_states(env_states: list[EnvState]):
     def serialize_array(arr, key_path: str = ""):
-        if key_path in ["vision_power_map", "relic_nodes_mask", "relic_node_configs", "energy_node_fns"]:
+        if key_path in ["vision_power_map", "relic_nodes_mask", "energy_node_fns"]:
             return None
         if isinstance(arr, jnp.ndarray):
             return arr.tolist()
@@ -109,8 +109,6 @@ def serialize_env_states(env_states: list[EnvState]):
 
 def serialize_env_actions(env_actions: list):
     def serialize_array(arr, key_path: str = ""):
-        if key_path in ["vision_power_map", "sensor_mask", "relic_nodes_mask", "relic_node_configs", "energy_node_fns"]:
-            return None
         if isinstance(arr, jnp.ndarray):
             return arr.tolist()
         elif isinstance(arr, dict):
@@ -277,7 +275,7 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
 
         relic_nodes = relic_nodes.at[0, :].set(jnp.array([1, 1], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[0].set(1)
-        relic_nodes = relic_nodes.at[1, :].set(jnp.array([2, 13], dtype=jnp.int16))
+        relic_nodes = relic_nodes.at[1, :].set(jnp.array([4, 13], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[1].set(1)
         relic_nodes = relic_nodes.at[2, :].set(jnp.array([14, 14], dtype=jnp.int16))
         relic_nodes_mask = relic_nodes_mask.at[2].set(1)

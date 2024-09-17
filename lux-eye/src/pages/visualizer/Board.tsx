@@ -10,12 +10,11 @@ interface SizeConfig {
   boardSize: number;
   tilesPerSide: number;
 }
-
-interface DisplayConfig {
+export interface DisplayConfig {
   energyField: boolean;
   sensorMask: boolean;
+  relicConfigs: boolean;
 }
-
 interface ThemeConfig {
   minimalTheme: boolean;
 }
@@ -70,17 +69,63 @@ function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step
       } else if (board.tileType[tileX][tileY] == 2) {
         color = '#2c3e50';
       } else {
-        const rgb = 210;
+        const rgb = 230;
         // const base = isDay ? 0.1 : 0.2;
         color = `rgba(${rgb}, ${rgb}, ${rgb}, 1)`;
       }
 
       ctx.fillStyle = color;
       ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+
       if (config.sensorMask) {
         for (const team of step.teams) {
           if (team.sensorMask[tileX][tileY]) {
             ctx.fillStyle = `rgba(255, 0, 0, 0.1)`;
+            ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+          }
+        }
+      }
+      if (config.energyField) {
+        const energy = board.energy[tileX][tileY];
+        if (energy > 0) {
+          ctx.fillStyle = `rgba(0, 255, 0, ${energy / 50})`;
+          ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+        } else {
+          ctx.fillStyle = `rgba(255, 0, 0, ${-energy / 50})`;
+          ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+        }
+      }
+    }
+  }
+
+  for (let i = 0; i < board.relicNodes.length; i++) {
+    const [canvasX, canvasY] = tileToCanvas(config, { x: board.relicNodes[i][0], y: board.relicNodes[i][1] });
+
+    ctx.fillStyle = 'orange';
+    ctx.fillRect(canvasX, canvasY, config.tileSize / 2, config.tileSize / 2);
+    if (config.relicConfigs) {
+      for (
+        let dx = -Math.floor(envParams.relic_config_size / 2);
+        dx < Math.ceil(envParams.relic_config_size / 2);
+        dx++
+      ) {
+        for (
+          let dy = -Math.floor(envParams.relic_config_size / 2);
+          dy < Math.ceil(envParams.relic_config_size / 2);
+          dy++
+        ) {
+          const nx = board.relicNodes[i][0] + dx;
+          const ny = board.relicNodes[i][1] + dy;
+          if (nx < 0 || nx >= config.tilesPerSide || ny < 0 || ny >= config.tilesPerSide) {
+            continue;
+          }
+          if (
+            board.relicNodeConfigs[i][dx + Math.floor(envParams.relic_config_size / 2)][
+              dy + Math.floor(envParams.relic_config_size / 2)
+            ] != 0
+          ) {
+            const [canvasX, canvasY] = tileToCanvas(config, { x: nx, y: ny });
+            ctx.fillStyle = 'rgba(100, 100, 0, 0.1)';
             ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
           }
         }
@@ -188,7 +233,7 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
 
   const episode = useStore(state => state.episode);
   const turn = useStore(state => state.turn);
-
+  const displayConfig = useStore(state => state.displayConfig);
   const selectedTile = useStore(state => state.selectedTile);
   const setSelectedTile = useStore(state => state.setSelectedTile);
 
@@ -200,11 +245,6 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
     boardSize: 0,
     tilesPerSide: 0,
   });
-
-  const displayConfig = {
-    energyField: true,
-    sensorMask: true,
-  };
 
   const step = episode!.steps[turn];
   const envParams = episode!.params;
@@ -262,7 +302,7 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
     };
 
     drawBoard(ctx, config, step, envParams, selectedTile);
-  }, [step, envParams, sizeConfig, selectedTile, minimalTheme]);
+  }, [step, envParams, sizeConfig, selectedTile, minimalTheme, displayConfig]);
 
   return (
     <canvas ref={canvasRef} width={sizeConfig.boardSize} height={sizeConfig.boardSize} onMouseLeave={onMouseLeave} />

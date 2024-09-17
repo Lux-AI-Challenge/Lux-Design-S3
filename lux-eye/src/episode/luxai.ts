@@ -127,15 +127,12 @@ function parseRobotAction(data: any): RobotAction {
 }
 
 export function isLuxAISEpisode(data: any): boolean {
-  // console.log(data);
-  // TODO: chekc this
+  // TODO: check this
   return typeof data === 'object';
   // return typeof data === 'object' && data.observations !== undefined && data.actions !== undefined;
 }
 
 export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = {}): Episode {
-  console.log('PARSING');
-  // console.log(data);
   let metadata: EpisodeMetadata = { teamNames: ['Player A', 'Player B'], seed: undefined };
   metadata = {
     ...metadata,
@@ -176,6 +173,8 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
     const board: Board = {
       energy: obs.map_features.energy,
       tileType: obs.map_features.tile_type,
+      relicNodes: obs.relic_nodes,
+      relicNodeConfigs: obs.relic_node_configs,
       // ice: transpose(obs.map_features.ice),
       // lichen: transpose(obs.board.lichen),
       // strains: transpose(obs.board.lichen_strains),
