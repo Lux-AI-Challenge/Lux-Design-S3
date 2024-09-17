@@ -184,6 +184,13 @@ class LuxAIS3Env(environment.Environment):
         )
 
         state = self.compute_sensor_masks(state, params)
+        
+        # Shift objects around in space
+        # Move the nebula tiles in state.map_features.tile_types up by 1 and to the right by 1
+        new_tile_types_map = jnp.roll(state.map_features.tile_type, shift=(1 * jnp.sign(params.nebula_tile_drift_speed), -1 * jnp.sign(params.nebula_tile_drift_speed)), axis=(0, 1))
+        new_tile_types_map = jnp.where(state.steps * params.nebula_tile_drift_speed % 1 == 0, new_tile_types_map, state.map_features.tile_type)
+        new_energy_nodes = jnp.where(state.steps * params.energy_node_drift_speed % 1 == 0, state.energy_nodes + jnp.array([1 * jnp.sign(params.energy_node_drift_speed), -1 * jnp.sign(params.energy_node_drift_speed)]), state.energy_nodes)
+        state = state.replace(map_features=state.map_features.replace(tile_type=new_tile_types_map), energy_nodes=new_energy_nodes)
 
         
         # Compute relic scores
@@ -219,7 +226,7 @@ class LuxAIS3Env(environment.Environment):
         # TODO (stao): only logic in code that probably doesn't not handle more than 2 teams, everything else is vmapped across teams
         def spawn_team_units(state: EnvState):
             state = spawn_unit(state, 0, state.units_mask[0].sum(), [0, 0], params)
-            state = spawn_unit(state, 1, state.units_mask[1].sum(), [15, 15], params)
+            state = spawn_unit(state, 1, state.units_mask[1].sum(), [params.map_width - 1, params.map_height - 1], params)
             return state
         state = jax.lax.cond(spawn_units_in, lambda: spawn_team_units(state), lambda: state)
 

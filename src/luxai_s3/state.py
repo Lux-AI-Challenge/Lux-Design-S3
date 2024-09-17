@@ -112,7 +112,9 @@ def serialize_env_states(env_states: list[EnvState]):
 
 def serialize_env_actions(env_actions: list):
     def serialize_array(arr, key_path: str = ""):
-        if isinstance(arr, jnp.ndarray):
+        if isinstance(arr, np.ndarray):
+            return arr.tolist()
+        elif isinstance(arr, jnp.ndarray):
             return arr.tolist()
         elif isinstance(arr, dict):
             ret = dict()

@@ -64,12 +64,13 @@ class EnvParams:
     """
     
     
-    nebula_tile_drift_speed: int = 1
+    nebula_tile_drift_speed: float = -0.2
     """
-    how fast nebula tiles drift in one of the diagonal directions over time
+    how fast nebula tiles drift in one of the diagonal directions over time. If positive, flows to the top/right, negative flows to bottom/left
     """
+    # TODO (stao): allow other kinds of symmetric drifts?
     
-    energy_node_drift_speed: int = 1
+    energy_node_drift_speed: int = 0.1
     """
     how fast energy nodes will move around over time
     """

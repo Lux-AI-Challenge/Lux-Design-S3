@@ -5,7 +5,9 @@ from typing import Any, SupportsFloat
 import flax
 import gymnasium as gym
 import gymnax
+import gymnax.environments.spaces
 import jax
+import numpy as np
 
 from luxai_s3.env import LuxAIS3Env
 from luxai_s3.params import EnvParams, env_params_ranges
@@ -34,7 +36,12 @@ class LuxAIS3GymEnv(gym.Env):
                 subkey, state, action, params=dummy_env_params
             )
         print("Finish compilation steps")
-        self.action_space = self.jax_env.action_space(self.env_params)
+        # import ipdb;ipdb.set_trace()
+        self.action_space = gym.spaces.Dict(dict(
+            team_0=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5),
+            team_1=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5)
+        ))
+        
         
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
         if seed is not None:
