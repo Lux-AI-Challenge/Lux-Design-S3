@@ -63,6 +63,9 @@ class EnvParams:
     A tile can be seen if the vision power over it is > 0.
     """
     
+    nebula_tile_energy_reduction: int = 0
+    """amount of energy nebula tiles reduce from a unit"""
+    
     
     nebula_tile_drift_speed: float = -0.05
     """
@@ -81,6 +84,7 @@ env_params_ranges = dict(
     unit_move_cost=list(range(1, 6)),
     sensor_range=list(range(1, 4)),
     nebula_tile_vision_reduction=list(range(0,4)),
+    nebula_tile_energy_reduction=[0, 10, 100],
     unit_sap_amount=list(range(10, 51)),
-    unit_sap_range=list(range(3, 9))
+    unit_sap_range=list(range(3, 9)),
 )

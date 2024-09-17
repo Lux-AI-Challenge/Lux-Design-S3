@@ -170,7 +170,7 @@ class LuxAIS3Env(environment.Environment):
         # Update unit energy based on the energy field of their current position
         def update_unit_energy(unit: UnitState, mask):
             x, y = unit.position
-            energy_gain = state.map_features.energy[x, y]
+            energy_gain = state.map_features.energy[x, y] - (state.map_features.tile_type == NEBULA_TILE) * params.nebula_tile_energy_reduction
             new_energy = jnp.clip(unit.energy + energy_gain, params.min_unit_energy, params.max_unit_energy)
             return UnitState(position=unit.position, energy=jnp.where(mask, new_energy, unit.energy))
 
