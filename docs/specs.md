@@ -66,10 +66,10 @@ When a unit is inside a nebula tile, if the nebula vision reduction is powerful 
 At each time step of a match, we run the following steps in order:
 1. Move all units that have enough energy to move
 2. Execute the sap actions of all units that have enough energy to do so
-3. Spawn units for all teams
-4. Update the energy of all units based on their position
-5. Compute new team points
-6. Determine the team vision for all teams and return observations accordingly
+3. Update the energy of all units based on their position
+4. Compute new team points
+5. Determine the team vision for all teams and return observations accordingly
+6. Spawn units for all teams
 
 ## Game Parameters
 

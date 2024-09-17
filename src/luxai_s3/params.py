@@ -13,11 +13,12 @@ class EnvParams:
     """number of matches to play in one episode"""
 
     # configs for units
-    max_units: int = 10
+    max_units: int = 16
     init_unit_energy: int = 100
     min_unit_energy: int = 0
     max_unit_energy: int = 400
     unit_move_cost: int = 2
+    spawn_rate: int = 4
 
 
     unit_sap_cost: int = 10

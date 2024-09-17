@@ -203,11 +203,11 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
         map_features=generated["map_features"],
     )
 
-    state = spawn_unit(state, 0, 0, [0, 0], params)
-    state = spawn_unit(state, 0, 1, [0, 0], params)
+    # state = spawn_unit(state, 0, 0, [0, 0], params)
+    # state = spawn_unit(state, 0, 1, [0, 0], params)
     # state = spawn_unit(state, 0, 2, [0, 0])
-    state = spawn_unit(state, 1, 0, [15, 15], params)
-    state = spawn_unit(state, 1, 1, [15, 15], params)
+    # state = spawn_unit(state, 1, 0, [15, 15], params)
+    # state = spawn_unit(state, 1, 1, [15, 15], params)
     # state = spawn_unit(state, 1, 2, [15, 15])
     return state
 

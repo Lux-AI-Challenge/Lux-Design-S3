@@ -26,16 +26,18 @@ if __name__ == "__main__":
     # Take a random action
     key, subkey = jax.random.split(key)
     action = env.action_space(env_params).sample(subkey)
-    # Step the environment
-    key, subkey = jax.random.split(key)
-    obs, state, reward, terminated, truncated, info = env.step(
-        subkey, state, action, params=env_params
-    )
+    # Step the environment and compile. Not sure why 2 steps? are needed
+    for _ in range(2):
+        key, subkey = jax.random.split(key)
+        obs, state, reward, terminated, truncated, info = env.step(
+            subkey, state, action, params=env_params
+        )
 
 
 
     states = []
     actions = []
+    key = jax.random.key(0)
     key, subkey = jax.random.split(key)
     obs, state = env.reset(subkey, params=env_params)
     states.append(state)

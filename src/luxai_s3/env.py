@@ -11,7 +11,7 @@ from jax import lax
 
 from luxai_s3.params import EnvParams
 from luxai_s3.spaces import MultiDiscrete
-from luxai_s3.state import ASTEROID_TILE, ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, UnitState, gen_state
+from luxai_s3.state import ASTEROID_TILE, ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, UnitState, gen_state, spawn_unit
 from luxai_s3.pygame_render import LuxAIPygameRenderer
 
 
@@ -188,7 +188,7 @@ class LuxAIS3Env(environment.Environment):
         
         # Compute relic scores
         def compute_relic_score(unit, relic_nodes_map_weights, mask):
-            total_score = relic_nodes_map_weights[unit[1], unit[0]]
+            total_score = relic_nodes_map_weights[unit.position[0], unit.position[1]]
             return total_score & mask
 
         def team_relic_score(units, units_mask):
@@ -199,19 +199,13 @@ class LuxAIS3Env(environment.Environment):
             )
             return jnp.sum(scores, dtype=jnp.int32)
 
-        # team_0_score = team_relic_score(state.units[0], state.units_mask[0])
+        team_scores = jax.vmap(team_relic_score)(state.units, state.units_mask)
         # team_1_score = team_relic_score(state.units[1], state.units_mask[1])
-
-        # # Update team points
-        # state = state.replace(
-        #     team_points=state.team_points.at[0].add(team_0_score)
-        # )
-        # state = state.replace(
-        #     team_points=state.team_points.at[1].add(team_1_score)
-        # )
-        # print(state.team_points)
-        # Update state's step count
-        state = state.replace(steps=state.steps + 1, match_steps=state.match_steps + 1)
+        # jax.debug.print("{team_scores}", team_scores=team_scores)
+        # Update team points
+        state = state.replace(
+            team_points=state.team_points + team_scores
+        )
 
         reward = jnp.array(0.0)
         terminated = self.is_terminal(state, params)
@@ -220,6 +214,17 @@ class LuxAIS3Env(environment.Environment):
         match_ended = state.match_steps >= params.max_steps_in_match
         state = state.replace(units_mask=jnp.where(match_ended, jnp.zeros_like(state.units_mask), state.units_mask), match_steps=jnp.where(match_ended, 0, state.match_steps))
 
+        # spawn units in
+        spawn_units_in = (state.match_steps % params.spawn_rate == 0)
+        # TODO (stao): only logic in code that probably doesn't not handle more than 2 teams, everything else is vmapped across teams
+        def spawn_team_units(state: EnvState):
+            state = spawn_unit(state, 0, state.units_mask[0].sum(), [0, 0], params)
+            state = spawn_unit(state, 1, state.units_mask[1].sum(), [15, 15], params)
+            return state
+        state = jax.lax.cond(spawn_units_in, lambda: spawn_team_units(state), lambda: state)
+
+        # Update state's step count
+        state = state.replace(steps=state.steps + 1, match_steps=state.match_steps + 1)
         truncated = state.steps >= params.max_steps_in_match * params.match_count_per_episode
         return (
             lax.stop_gradient(self.get_obs(state, params, key=key)),

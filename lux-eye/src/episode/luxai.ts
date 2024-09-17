@@ -285,8 +285,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       const robots: Robot[] = [];
       // TODO: might not use a mask in the future.
       // console.log(obs.units_mask);
-
-      for (let unitIdx = 0; unitIdx < obs.units_mask.length; unitIdx++) {
+      for (let unitIdx = 0; unitIdx < obs.units_mask[j].length; unitIdx++) {
         if (obs.units_mask[j][unitIdx]) {
           robots.push({
             unitId: `unit_${unitIdx}`,
@@ -323,7 +322,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       // const rawTeam = obs.teams[playerId];
       teams.push({
         name: metadata.teamNames[j],
-        points: 0,
+        points: obs.team_points[j],
         error: error,
         //   name: metadata.teamNames[j],
         //   faction: rawTeam.faction,
