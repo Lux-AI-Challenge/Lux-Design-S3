@@ -86,7 +86,7 @@ class EnvState:
 
 def serialize_env_states(env_states: list[EnvState]):
     def serialize_array(arr, key_path: str = ""):
-        if key_path in ["vision_power_map", "sensor_mask", "relic_nodes_mask", "relic_node_configs", "energy_node_fns"]:
+        if key_path in ["vision_power_map", "relic_nodes_mask", "relic_node_configs", "energy_node_fns"]:
             return None
         if isinstance(arr, jnp.ndarray):
             return arr.tolist()

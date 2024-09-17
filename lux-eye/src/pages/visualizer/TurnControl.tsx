@@ -12,7 +12,7 @@ import {
   IconPlayerTrackPrev,
 } from '@tabler/icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getMatchIdx } from '../../episode/luxai';
+import { getMatchIdx, parseTileType } from '../../episode/luxai';
 import { useStore } from '../../store';
 
 const SPEEDS = [0.5, 1, 2, 4, 8, 16, 32];
@@ -188,6 +188,12 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
               </td>
               <td>Decrease speed</td>
             </tr>
+            <tr>
+              <td>
+                <Kbd>e</Kbd>
+              </td>
+              <td>Toggle Energy Field Display</td>
+            </tr>
             {SPEEDS.map((speed, i) => (
               <tr key={i}>
                 <td>
@@ -296,11 +302,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
       {selectedTile !== null && (
         <Group position="apart">
-          {/* <Text>Rubble: {step.board.rubble[selectedTile.y][selectedTile.x]}</Text>
-          <Text>Strain: {step.board.strains[selectedTile.y][selectedTile.x]}</Text>
-          <Text>Lichen: {step.board.lichen[selectedTile.y][selectedTile.x]}</Text>
-          <Text>Ice: {step.board.ice[selectedTile.y][selectedTile.x] > 0 ? 'Yes' : 'No'}</Text>
-          <Text>Ore: {step.board.ore[selectedTile.y][selectedTile.x] > 0 ? 'Yes' : 'No'}</Text> */}
+          <Text>Tile Type: {parseTileType(step.board.tileType[selectedTile.x][selectedTile.y])}</Text>
         </Group>
       )}
 

@@ -105,7 +105,7 @@ class LuxAIS3Env(environment.Environment):
         vision_power_map = vision_power_map[:, vision_power_map_padding:-vision_power_map_padding, vision_power_map_padding:-vision_power_map_padding]
 
         # handle nebula tiles
-        vision_power_map = vision_power_map - (state.map_features.tile_type == NEBULA_TILE)[..., 0] * params.nebula_tile_vision_reduction
+        vision_power_map = vision_power_map - (state.map_features.tile_type == NEBULA_TILE) * params.nebula_tile_vision_reduction
         
         sensor_mask = vision_power_map > 0
         state = state.replace(sensor_mask=sensor_mask)

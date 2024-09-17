@@ -31,6 +31,11 @@ export interface Tile {
   x: number;
   y: number;
 }
+export enum TileType {
+  Space,
+  Nebula,
+  Asteroid,
+}
 
 export interface Cargo {
   ice: number;
@@ -157,6 +162,8 @@ export interface Team {
   // factoriesToPlace: number;
 
   // action: SetupAction | null;
+
+  sensorMask: boolean[][];
 
   error: string | null;
 }

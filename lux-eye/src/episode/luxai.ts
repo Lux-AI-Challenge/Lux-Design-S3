@@ -11,6 +11,7 @@ import {
   SetupAction,
   Step,
   Team,
+  TileType,
 } from './model';
 
 function transpose<T>(matrix: T[][]): T[][] {
@@ -140,6 +141,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
     ...metadata,
     ...extra,
   };
+  const params: EnvParams = data.params;
   if (data.metadata) {
     if (data.metadata['players']) {
       for (let i = 0; i < 2; i++) {
@@ -172,8 +174,8 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
     }
 
     const board: Board = {
-      energy: transpose(obs.map_features.energy),
-      tileType: transpose(obs.map_features.tile_type),
+      energy: obs.map_features.energy,
+      tileType: obs.map_features.tile_type,
       // ice: transpose(obs.map_features.ice),
       // lichen: transpose(obs.board.lichen),
       // strains: transpose(obs.board.lichen_strains),
@@ -279,11 +281,13 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       //   });
       // }
       // console.log(obs);
+      //sensorMask
+      const sensorMask = obs.sensor_mask[j];
       const robots: Robot[] = [];
       // TODO: might not use a mask in the future.
-      console.log(obs.units_mask);
+      // console.log(obs.units_mask);
+
       for (let unitIdx = 0; unitIdx < obs.units_mask.length; unitIdx++) {
-        // const rawRobot = obs.units[unit_idx];
         if (obs.units_mask[j][unitIdx]) {
           robots.push({
             unitId: `unit_${unitIdx}`,
@@ -291,7 +295,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
               x: obs.units.position[j][unitIdx][0],
               y: obs.units.position[j][unitIdx][1],
             },
-            energy: obs.units.energy[j][unitIdx],
+            energy: parseInt(obs.units.energy[j][unitIdx]),
           });
         }
       }
@@ -331,6 +335,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
         //   factories,
         robots,
 
+        sensorMask,
         //   strains: new Set(rawTeam.factory_strains),
 
         //   placeFirst: rawTeam.place_first,
@@ -347,10 +352,22 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       teams: teams as [Team, Team],
     });
   }
-  console.log(steps);
-  return { steps, metadata, params: data.params };
+  // console.log(steps);
+  return { steps, metadata, params: params };
 }
 
 export function getMatchIdx(step: number, envParams: EnvParams): number {
   return Math.floor(step / envParams.max_steps_in_match);
+}
+
+export function parseTileType(tileType: number): string {
+  switch (tileType) {
+    case 0:
+      return 'Space';
+    case 1:
+      return 'Nebula';
+    case 2:
+      return 'Asteroid';
+  }
+  return 'Null';
 }

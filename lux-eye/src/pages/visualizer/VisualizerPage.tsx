@@ -27,6 +27,11 @@ export const funcPoints: ChartFunction = (team, board) => {
   return team.points;
 };
 
+export const funcTotalUnitEnergy: ChartFunction = (team, board) => {
+  board;
+  return team.robots.reduce((acc, val) => acc + val.energy, 0);
+};
+
 // const funcTotalMetalValue: ChartFunction = team =>
 //   team.factories.reduce((acc, val) => acc + val.cargo.metal, 0) +
 //   team.robots.filter(robot => robot.type === RobotType.Light).length * 10 +
@@ -86,6 +91,9 @@ export function VisualizerPage(): JSX.Element {
       <Grid columns={12}>
         <Grid.Col span={12} md={6}>
           <Chart title="Points" func={funcPoints} />
+        </Grid.Col>
+        <Grid.Col span={12} md={6}>
+          <Chart title="Total Unit Energy" func={funcTotalUnitEnergy} />
         </Grid.Col>
         {/* <Grid.Col span={12} md={6}>
           <Chart title="Power in robots" func={funcRobotPower} />

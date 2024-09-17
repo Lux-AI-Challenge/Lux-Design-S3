@@ -11,11 +11,16 @@ interface SizeConfig {
   tilesPerSide: number;
 }
 
+interface DisplayConfig {
+  energyField: boolean;
+  sensorMask: boolean;
+}
+
 interface ThemeConfig {
   minimalTheme: boolean;
 }
 
-type Config = SizeConfig & ThemeConfig;
+type Config = SizeConfig & ThemeConfig & DisplayConfig;
 
 function getSizeConfig(maxWidth: number, step: Step): SizeConfig {
   const gutterSize = 1;
@@ -51,7 +56,6 @@ function tileToCanvas(sizes: SizeConfig, tile: Tile): [number, number] {
 
 function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step: Step, envParams: EnvParams): void {
   const board = step.board;
-  const isAlternateMatch = (step.step % envParams.max_steps_in_match) * 2 < 50;
 
   for (let tileY = 0; tileY < config.tilesPerSide; tileY++) {
     for (let tileX = 0; tileX < config.tilesPerSide; tileX++) {
@@ -61,25 +65,26 @@ function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step
       ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
 
       let color: string;
-      if (board.tileType[tileY][tileX] == 1) {
+      if (board.tileType[tileX][tileY] == 1) {
         color = '#5B5F97';
-      } else if (board.tileType[tileY][tileX] == 2) {
+      } else if (board.tileType[tileX][tileY] == 2) {
         color = '#2c3e50';
       } else {
-        const rgb = isAlternateMatch ? 150 : 75;
+        const rgb = 210;
         // const base = isDay ? 0.1 : 0.2;
         color = `rgba(${rgb}, ${rgb}, ${rgb}, 1)`;
       }
 
       ctx.fillStyle = color;
       ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
-
-      // const lichen = board.lichen[tileY][tileX];
-      // if (lichen > 0) {
-      //   const team = teamStrains.get(board.strains[tileY][tileX])!;
-      //   ctx.fillStyle = getTeamColor(team, 0.1 + scale(lichen, 0, 100) * 0.4);
-      //   ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
-      // }
+      if (config.sensorMask) {
+        for (const team of step.teams) {
+          if (team.sensorMask[tileX][tileY]) {
+            ctx.fillStyle = `rgba(255, 0, 0, 0.1)`;
+            ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+          }
+        }
+      }
     }
   }
 
@@ -196,6 +201,11 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
     tilesPerSide: 0,
   });
 
+  const displayConfig = {
+    energyField: true,
+    sensorMask: true,
+  };
+
   const step = episode!.steps[turn];
   const envParams = episode!.params;
 
@@ -248,6 +258,7 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
     const config = {
       ...sizeConfig,
       minimalTheme,
+      ...displayConfig,
     };
 
     drawBoard(ctx, config, step, envParams, selectedTile);
