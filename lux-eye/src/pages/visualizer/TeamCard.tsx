@@ -26,16 +26,6 @@ export function getWinnerInfo(episode: Episode, team: number): [won: boolean, re
     return [false, null];
   } else if (!meError && opponentError) {
     return [true, 'Winner by opponent error'];
-    // } else if (me.faction !== Faction.None && opponent.faction === Faction.None) {
-    //   return [true, 'Winner by opponent error'];
-    // } else if (me.faction === Faction.None && opponent.faction !== Faction.None) {
-    //   return [false, null];
-    // } else if (me.factories.length === 0 && opponent.factories.length === 0) {
-    //   return [true, 'Draw, all factories destroyed'];
-    // } else if (me.factories.length > 0 && opponent.factories.length === 0) {
-    //   return [true, 'Winner by factory elimination'];
-    // } else if (me.factories.length === 0 && opponent.factories.length > 0) {
-    //   return [false, null];
   } else if (lastStep.step === episode.params.max_steps_in_match * episode.params.match_count_per_episode) {
     if (mePoints > opponentPoints) {
       return [true, 'Winner by points'];
