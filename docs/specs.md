@@ -70,6 +70,7 @@ At each time step of a match, we run the following steps in order:
 4. Compute new team points
 5. Determine the team vision for all teams and return observations accordingly
 6. Spawn units for all teams
+7. Environment objects like asteroids/nebula tiles/energy nodes move around in space
 
 ## Game Parameters
 

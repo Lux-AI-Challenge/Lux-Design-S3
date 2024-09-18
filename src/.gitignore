@@ -1,2 +1,3 @@
 *.egg-info/
 *episode.json
+episodes/

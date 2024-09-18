@@ -329,7 +329,13 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
       {selectedTile !== null && (
         <Group position="apart">
-          <Text>Tile Type: {parseTileType(step.board.tileType[selectedTile.x][selectedTile.y])}</Text>
+          <Text>Tile Type: {parseTileType(step.board.tileType[selectedTile.x][selectedTile.y])} {step.board.energyNodes.find((val) => {
+            return val[0] == selectedTile.x && val[1] == selectedTile.y
+          }) && "(Energy Node)"} {step.board.relicNodes.find((val) => {
+            return val[0] == selectedTile.x && val[1] == selectedTile.y
+          }) && "(Relic Node)"}</Text>
+          
+          
           <Text>Energy: {step.board.energy[selectedTile.x][selectedTile.y]}</Text>
         </Group>
       )}

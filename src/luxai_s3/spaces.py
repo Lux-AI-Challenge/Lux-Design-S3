@@ -19,7 +19,7 @@ class MultiDiscrete(Space):
             jax.random.uniform(rng, shape=(self.n,), minval=0, maxval=1) * self.nvec
         ).astype(self.dtype)
 
-    def contains(self, x: jnp.int_) -> jnp.ndarray:
+    def contains(self, x) -> jnp.ndarray:
         """Check whether specific object is within space."""
         # type_cond = isinstance(x, self.dtype)
         # shape_cond = (x.shape == self.shape)

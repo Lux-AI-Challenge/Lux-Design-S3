@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 from flax import struct
 
-from luxai_s3.params import EnvParams
+from luxai_s3.params import MAP_TYPES, EnvParams
 EMPTY_TILE = 0
 NEBULA_TILE = 1
 ASTEROID_TILE = 2
@@ -87,10 +87,12 @@ class EnvState:
 
 def serialize_env_states(env_states: list[EnvState]):
     def serialize_array(root: EnvState, arr, key_path: str = ""):
-        if key_path in ["vision_power_map", "relic_nodes_mask", "energy_node_fns"]:
+        if key_path in ["vision_power_map", "relic_nodes_mask", "energy_node_fns", "relic_nodes_map_weights"]:
             return None
         if key_path == "relic_nodes":
             return root.relic_nodes[root.relic_nodes_mask].tolist()
+        if key_path == "energy_nodes":
+            return root.energy_nodes[root.energy_nodes_mask].tolist()
         if isinstance(arr, jnp.ndarray):
             return arr.tolist()
         elif isinstance(arr, dict):
@@ -101,7 +103,7 @@ def serialize_env_states(env_states: list[EnvState]):
                 if new_val is not None:
                     ret[k] = new_val
             return ret
-
+# TODO (stao): to optimize save file we can store deltas of map info instead. might not be able to do this with kaggle replays though.
         return arr
     steps = []
     for state in env_states:
@@ -112,7 +114,9 @@ def serialize_env_states(env_states: list[EnvState]):
 
 def serialize_env_actions(env_actions: list):
     def serialize_array(arr, key_path: str = ""):
-        if isinstance(arr, jnp.ndarray):
+        if isinstance(arr, np.ndarray):
+            return arr.tolist()
+        elif isinstance(arr, jnp.ndarray):
             return arr.tolist()
         elif isinstance(arr, dict):
             ret = dict()
@@ -244,8 +248,8 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     energy_nodes_mask = jnp.zeros(shape=(params.max_energy_nodes), dtype=jnp.int16)
     relic_nodes = jnp.zeros(shape=(params.max_relic_nodes, 2), dtype=jnp.int16)
     relic_nodes_mask = jnp.zeros(shape=(params.max_relic_nodes), dtype=jnp.bool)
-    if params.map_type == "dev0":
-        assert params.map_height == 16 and params.map_width == 16
+    if MAP_TYPES[params.map_type] == "dev0":
+        # assert params.map_height == 16 and params.map_width == 16
         map_features = set_tile(map_features, 4, 4, NEBULA_TILE)
         map_features = set_tile(map_features, slice(3, 6), slice(2, 4), NEBULA_TILE)
         map_features = set_tile(map_features, slice(4, 7), slice(6, 9), NEBULA_TILE)
@@ -264,7 +268,7 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         map_features = set_tile(map_features, 11, 12, NEBULA_TILE)
         energy_nodes = energy_nodes.at[0, :].set(jnp.array([4, 4], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[0].set(1)
-        energy_nodes = energy_nodes.at[1, :].set(jnp.array([11, 11], dtype=jnp.int16))
+        energy_nodes = energy_nodes.at[1, :].set(jnp.array([20, 20], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[1].set(1)
         energy_node_fns = jnp.array(
             [
@@ -276,38 +280,38 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         )
         energy_node_fns = jnp.concat([energy_node_fns, jnp.zeros((params.max_energy_nodes - 2, 4), dtype=jnp.float32)], axis=0)
 
-        # relic_nodes = relic_nodes.at[0, :].set(jnp.array([1, 1], dtype=jnp.int16))
-        # relic_nodes_mask = relic_nodes_mask.at[0].set(1)
-        # relic_nodes = relic_nodes.at[1, :].set(jnp.array([4, 13], dtype=jnp.int16))
-        # relic_nodes_mask = relic_nodes_mask.at[1].set(1)
-        # relic_nodes = relic_nodes.at[2, :].set(jnp.array([14, 14], dtype=jnp.int16))
-        # relic_nodes_mask = relic_nodes_mask.at[2].set(1)
-        # relic_nodes = relic_nodes.at[3, :].set(jnp.array([13, 2], dtype=jnp.int16))
-        # relic_nodes_mask = relic_nodes_mask.at[3].set(1)
-
-        relic_node_configs = (
-            jax.random.randint(
-                key,
-                shape=(
-                    params.max_relic_nodes,
-                    params.relic_config_size,
-                    params.relic_config_size,
-                ),
-                minval=0,
-                maxval=10,
-                dtype=jnp.int16,
-            )
-            >= 6
+    relic_node_configs = (
+        jax.random.randint(
+            key,
+            shape=(
+                params.max_relic_nodes,
+                params.relic_config_size,
+                params.relic_config_size,
+            ),
+            minval=0,
+            maxval=10,
+            dtype=jnp.int16,
         )
+        >= 6
+    )
     # elif params.map_type == "random":
     # Apply the nebula tiles to the map_features
     # map_features = map_features.replace(tile_type=jnp.where(nebula_map, NEBULA_TILE, EMPTY_TILE))
-    noise = generate_perlin_noise_2d( (params.map_height, params.map_width), (4, 4))
-    noise = jnp.where(noise > 0.5, 1, 0)
+    perlin_noise = generate_perlin_noise_2d( (params.map_height, params.map_width), (4, 4))
+    noise = jnp.where(perlin_noise > 0.5, 1, 0)
     noise = noise | noise.T
     # Flip the noise matrix's rows and columns in reverse
     noise = noise[::-1, ::1]
+    
     map_features = map_features.replace(tile_type=jnp.where(noise, NEBULA_TILE, 0))
+    
+    noise = jnp.where(perlin_noise < -0.6, 1, 0)
+    noise = noise | noise.T
+    # Flip the noise matrix's rows and columns in reverse
+    noise = noise[::-1, ::1]
+    # jax.debug.breakpoint()
+    map_features = map_features.replace(tile_type=jnp.place(map_features.tile_type, noise, 2, inplace=False))
+    
     noise = generate_perlin_noise_2d( (params.map_height, params.map_width), (4, 4))
     # Find the positions of the two highest noise values
     flat_indices = jnp.argsort(noise.ravel())[-2:]  # Get indices of two highest values
@@ -317,22 +321,18 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     highest_positions = highest_positions.astype(jnp.int16)
     # Set relic nodes to the positions of highest noise values
     relic_nodes = relic_nodes.at[0, :].set(highest_positions[0])
-    relic_nodes_mask = relic_nodes_mask.at[0].set(1)
+    relic_nodes_mask = relic_nodes_mask.at[0].set(True)
     relic_nodes = relic_nodes.at[1, :].set(highest_positions[1])
-    relic_nodes_mask = relic_nodes_mask.at[1].set(1)
+    relic_nodes_mask = relic_nodes_mask.at[1].set(True)
     mirrored_pos1 = jnp.array([params.map_width - highest_positions[0][1], params.map_height - highest_positions[0][0]], dtype=jnp.int16)
     mirrored_pos2 = jnp.array([params.map_width - highest_positions[1][1], params.map_height - highest_positions[1][0]], dtype=jnp.int16)
     # Set the mirrored positions for the other two relic nodes
     relic_nodes = relic_nodes.at[2, :].set(mirrored_pos1)
-    relic_nodes_mask = relic_nodes_mask.at[2].set(1)
+    relic_nodes_mask = relic_nodes_mask.at[2].set(True)
     relic_nodes = relic_nodes.at[3, :].set(mirrored_pos2)
-    relic_nodes_mask = relic_nodes_mask.at[3].set(1)
+    relic_nodes_mask = relic_nodes_mask.at[3].set(True)
     relic_node_configs = relic_node_configs.at[2].set(relic_node_configs[0])
     relic_node_configs = relic_node_configs.at[3].set(relic_node_configs[1])
-    # Reset the remaining relic nodes to zero and update their masks
-    # for i in range(2, params.max_relic_nodes):
-    #     relic_nodes = relic_nodes.at[i, :].set(jnp.array([0, 0], dtype=jnp.int16))
-    #     relic_nodes_mask = relic_nodes_mask.at[i].set(0)
     return dict(
         map_features=map_features,
         energy_nodes=energy_nodes,
