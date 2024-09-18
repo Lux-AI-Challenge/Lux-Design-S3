@@ -32,6 +32,7 @@ class LuxAIS3GymEnv(gym.Env):
         # Step the environment and compile. Not sure why 2 steps? are needed
         for _ in range(2):
             key, subkey = jax.random.split(key)
+            print(action)
             obs, state, reward, terminated, truncated, info = self.jax_env.step(
                 subkey, state, action, params=dummy_env_params
             )
