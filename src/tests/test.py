@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     # Create the environment
     env = LuxAIS3Env(auto_reset=False)
-    env_params = EnvParams(map_type="dev0", max_steps_in_match=50)
+    env_params = EnvParams(map_type=0, max_steps_in_match=50)
 
     # Initialize a random key
     key = jax.random.key(0)

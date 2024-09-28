@@ -42,6 +42,9 @@ class LuxAIS3GymEnv(gym.Env):
             team_0=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5),
             team_1=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5)
         ))
+    
+    def render(self):
+        self.jax_env.render(self.state, self.env_params)
         
         
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:

@@ -11,90 +11,49 @@ from luxai_runner.logger import Logger
 from luxai_runner.tournament import Tournament, TournamentConfig
 
 from luxai_s3.wrappers import LuxAIS3GymEnv
+import tyro
+from dataclasses import dataclass, field
+from typing import Optional
 
+@dataclass
+class ReplayConfig:
+    save_format: str = "json"
+    """Format of the replay file, can be either "html" or "json". HTML replays are easier to visualize, JSON replays are easier to analyze programmatically. Defaults to the extension of the path passed to --output, or "json" if there is no extension or it is invalid."""
+    compressed_obs: bool = True
+    """Whether to save compressed observations or not. Compressed observations do not contain the full observation at each step. In particular, the map information is stored as the first observation, subsequent observations only store the changes that happened."""
+
+@dataclass
+class Args:
+    players: tyro.conf.Positional[List[str]]
+    """Paths to player modules. If --tournament is passed as well, you can also pass a folder and we will look through all sub-folders for valid agents with main.py files (only works for python agents at the moment)."""
+    len: Optional[int] = 1000
+    """Max episode length"""
+    output: Optional[str] = None
+    """Where to output replays. Default is none and no replay is generated"""
+    replay: ReplayConfig = field(default_factory=lambda : ReplayConfig())
+    
+    verbose: int = 2
+    """Verbose Level (0 = silent, 1 = (game-ending errors, debug logs from agents), 2 = warnings (non-game ending invalid actions), 3 = info (system info, unit collisions) )"""
+    seed: Optional[int] = None
+    """Fix a seed for episode(s). All episodes will initialize the same, including tournament ones"""
+    render: bool = False
+    """Render with a window"""
+    tournament: bool = False
+    """Turn tournament mode on"""
+    tournament_cfg_concurrent: int = 1
+    """Max concurrent number of episodes to run. Recommended to set no higher than the number of CPUs / 2"""
+    tournament_cfg_ranking_system: str = "elo"
+    """The ranking system to use. Default is 'elo'. Can be 'elo', 'wins'."""
+    # skip_validate_action_space: bool = False
+    # """Set this for a small performance increase. Note that turning this on means the engine assumes your submitted actions are valid. If your actions are not well formatted there could be errors"""
 
 def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Run the LuxAI Season 2 game.")
-    parser.add_argument(
-        "players",
-        nargs="+",
-        help="Paths to player modules. If --tournament is passed as well, you can also pass a folder and we will look through all sub-folders for valid agents with main.py files (only works for python agents at the moment).",
-    )
-    parser.add_argument(
-        "-l", "--len", help="Max episode length", type=int, default=1000
-    )
-
-    # replay configs
-    parser.add_argument(
-        "-o",
-        "--output",
-        help="Where to output replays. Default is none and no replay is generated",
-    )
-    parser.add_argument(
-        "--replay.save_format",
-        help='Format of the replay file, can be either "html" or "json". HTML replays are easier to visualize, JSON replays are easier to analyze programmatically. Defaults to the extension of the path passed to --output, or "json" if there is no extension or it is invalid.',
-        default="json",
-    )
-    parser.add_argument(
-        "--replay.compressed_obs",
-        help="Whether to save compressed observations or not. Compressed observations do not contain the full observation at each step. In particular, the map information is stored as the first observation, subsequent observations only store the changes that happened.",
-        default=True,
-    )
-
-    # episode configs
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Verbose Level (0 = silent, 1 = (game-ending errors, debug logs from agents), 2 = warnings (non-game ending invalid actions), 3 = info (system info, unit collisions) )",
-        type=int,
-        default=2,
-    )
-    parser.add_argument(
-        "-s",
-        "--seed",
-        help="Fix a seed for episode(s). All episodes will initialize the same, including tournament ones",
-        type=int,
-    )
-
-    # env configs
-
-    parser.add_argument(
-        "--render", help="Render with a window", action="store_true", default=False
-    )
-
-    parser.add_argument(
-        "--tournament",
-        help="Turn tournament mode on",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--tournament_cfg.concurrent",
-        help="Max concurrent number of episodes to run. Recommended to set no higher than the number of CPUs / 2",
-        type=int,
-        default=1,
-    )
-    parser.add_argument(
-        "--tournament_cfg.ranking_system",
-        help="The ranking system to use. Default is 'elo'. Can be 'elo', 'wins'.",
-        type=str,
-        default="elo",
-    )
-    parser.add_argument(
-        "--skip_validate_action_space",
-        help="Set this for a small performance increase. Note that turning this on means the engine assumes your submitted actions are valid. If your actions are not well formatted there could be errors",
-        action="store_true",
-        default=False,
-    )
-
-    args = parser.parse_args()
+    args = tyro.cli(Args)
 
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-    save_format = getattr(args, "replay.save_format")
+    save_format = args.replay.save_format
     if args.output is not None:
         output_file = Path(args.output).name
         if "." in output_file:
@@ -116,7 +75,7 @@ def main():
         save_replay_path=args.output,
         replay_options=ReplayConfig(
             save_format=save_format,
-            compressed_obs=getattr(args, "replay.compressed_obs"),
+            compressed_obs=args.replay.compressed_obs,
         ),
         render=args.render,
     )

@@ -155,6 +155,7 @@ class LuxAIS3Env(environment.Environment):
             )
             unit_moved = mask & ~is_blocked & enough_energy
             # Update the unit's position only if it's active
+            # import ipdb; ipdb.set_trace()
             return UnitState(position=jnp.where(unit_moved, new_pos, unit.position), energy=jnp.where(unit_moved, unit.energy - params.unit_move_cost, unit.energy))
 
         # Move units for both teams
@@ -170,7 +171,7 @@ class LuxAIS3Env(environment.Environment):
         # Update unit energy based on the energy field of their current position
         def update_unit_energy(unit: UnitState, mask):
             x, y = unit.position
-            energy_gain = state.map_features.energy[x, y] - (state.map_features.tile_type == NEBULA_TILE) * params.nebula_tile_energy_reduction
+            energy_gain = state.map_features.energy[x, y] - (state.map_features.tile_type[x, y] == NEBULA_TILE) * params.nebula_tile_energy_reduction
             new_energy = jnp.clip(unit.energy + energy_gain, params.min_unit_energy, params.max_unit_energy)
             return UnitState(position=unit.position, energy=jnp.where(mask, new_energy, unit.energy))
 
