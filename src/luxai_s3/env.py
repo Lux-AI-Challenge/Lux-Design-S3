@@ -293,8 +293,17 @@ class LuxAIS3Env(environment.Environment):
             state = state_st
         # Auto-reset environment based on done
         done = terminated | truncated
-
-        return obs, state, reward, terminated, truncated, info
+        
+        # all agents terminate/truncate at same time
+        terminated_dict = dict()
+        truncated_dict = dict()
+        reward_dict = dict()
+        for k in range(params.num_teams):
+            terminated_dict[f"team_{k}"] = terminated
+            truncated_dict[f"team_{k}"] = truncated
+            reward_dict[f"team_{k}"] = reward
+            info[f"team_{k}"] = dict()
+        return obs, state, reward_dict, terminated_dict, truncated_dict, info
 
     @functools.partial(jax.jit, static_argnums=(0, 2))
     def reset(

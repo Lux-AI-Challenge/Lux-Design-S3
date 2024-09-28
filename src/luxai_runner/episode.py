@@ -11,6 +11,7 @@ import numpy as np
 from luxai_runner.bot import Bot
 from luxai_runner.logger import Logger
 from luxai_runner.utils import to_json
+from luxai_s3.utils import to_numpy
 
 
 @dataclass
@@ -29,7 +30,6 @@ class EpisodeConfig:
     render: Optional[bool] = True
     save_replay_path: Optional[str] = None
     replay_options: ReplayConfig = field(default_factory=ReplayConfig)
-
 
 class Episode:
     def __init__(self, cfg: EpisodeConfig) -> None:
@@ -95,22 +95,23 @@ window.episode = {json.dumps(replay)};
         # Start agents
         players: Dict[str, Bot] = dict()
         start_tasks = []
-        save_replay = self.cfg.save_replay_path is not None
+        save_replay = False#self.cfg.save_replay_path is not None
         for i in range(2):
-            player = Bot(self.players[i], f"player_{i}", i, verbose=self.log.verbosity)
+            player = Bot(self.players[i], f"team_{i}", i, verbose=self.log.verbosity)
             player.proc.log.identifier = player.log.identifier
             players[player.agent] = player
             start_tasks += [player.proc.start()]
+        start_tasks = [asyncio.create_task(coroutine) for coroutine in start_tasks]
         await asyncio.wait(start_tasks, return_when=asyncio.ALL_COMPLETED)
 
         metadata = dict()
 
         obs, _ = self.env.reset(seed=self.seed)
-        env_cfg = self.env.state.env_cfg
-        state_obs = self.env.state.get_compressed_obs()
-        obs = to_json(state_obs)
+        env_cfg = self.env.env_params
+        # state_obs = self.env.get_compressed_obs()
+        obs = to_json(obs)
 
-        metadata["seed"] = self.env.seed_val
+        metadata["seed"] = self.seed
         metadata["players"] = dict()
         for player_id, bot in players.items():
             metadata["players"][player_id] = bot.main_file_path
@@ -145,17 +146,14 @@ window.episode = {json.dumps(replay)};
             action_coros = []
             for player in players.values():
                 action = player.step(
-                    obs, self.env.env_steps, rewards[agent], infos[agent]
+                    obs=obs, step=i, reward=rewards[player.agent], info=infos[player.agent]
                 )
                 action_coros += [action]
                 agent_ids += [player.agent]
             resolved_actions = await asyncio.gather(*action_coros)
             for agent_id, action in zip(agent_ids, resolved_actions):
                 try:
-                    for k in action:
-                        if type(action[k]) == list:
-                            action[k] = np.array(action[k])
-                    actions[agent_id] = action
+                    actions[agent_id] = to_numpy(action)
                 except:
                     if self.cfg.verbosity > 0:
                         if action is None:
@@ -166,12 +164,16 @@ window.episode = {json.dumps(replay)};
                             print(f"{agent_id} sent a invalid action {action}")
                     actions[agent_id] = None
             new_state_obs, rewards, terminations, truncations, infos = self.env.step(actions)
+            # infos = to_numpy(infos)
+            # TODO (stao): hard code to avoid using jax structs in the infos and sending those.
+            infos = dict(team_0=dict(), team_1=dict())
             dones = dict()
             for k in terminations:
                 dones[k] = terminations[k] | truncations[k]
-            change_obs = self.env.state.get_change_obs(state_obs)
-            state_obs = new_state_obs["player_0"]
-            obs = to_json(change_obs)
+            # change_obs = self.env.state.get_change_obs(state_obs)
+            # state_obs = new_state_obs["player_0"]
+            # obs = to_json(change_obs)
+            obs = to_json(new_state_obs)
             if save_replay:
                 if self.cfg.replay_options.compressed_obs:
                     replay["observations"].append(change_obs)

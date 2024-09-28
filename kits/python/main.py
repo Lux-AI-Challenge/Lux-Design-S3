@@ -3,6 +3,8 @@ from typing import Dict
 import sys
 from argparse import Namespace
 
+import numpy as np
+
 from agent import Agent
 from lux.config import EnvConfig
 from lux.kit import GameState, process_obs, to_json, from_json, process_action, obs_to_game_state
@@ -47,16 +49,23 @@ if __name__ == "__main__":
             raise SystemExit(eof)
     step = 0
     player_id = 0
-    configurations = None
+    env_cfg = None
     i = 0
+    # with open("inputs.txt", "w") as f:
+    #     f.write("test")
     while True:
         inputs = read_input()
-        obs = json.loads(inputs)
+        # with open(f"inputs_{i}.txt", "w") as f:
+        #     f.write(inputs)
         
-        observation = Namespace(**dict(step=obs["step"], obs=json.dumps(obs["obs"]), remainingOverageTime=obs["remainingOverageTime"], player=obs["player"], info=obs["info"]))
+        # print(inputs)
+        # observation = Namespace(**dict(step=obs["step"], obs=json.dumps(obs["obs"]), remainingOverageTime=obs["remainingOverageTime"], player=obs["player"], info=obs["info"]))
         if i == 0:
-            configurations = obs["info"]["env_cfg"]
+            obs = json.loads(inputs)
+            env_cfg = obs["info"]["env_cfg"]
         i += 1
-        actions = agent_fn(observation, dict(env_cfg=configurations))
-        # send actions to engine
-        print(json.dumps(actions))
+        actions = np.zeros(env_cfg["max_units"], dtype=int) + 1
+        # actions = agent_fn(observation, dict(env_cfg=configurations))
+        # # send actions to engine
+        print(json.dumps(dict(action=actions.tolist())))
+        # print([0, 0, 0, 0, 0, 0])

@@ -12,9 +12,11 @@ import numpy as np
 from luxai_s3.env import LuxAIS3Env
 from luxai_s3.params import EnvParams, env_params_ranges
 from luxai_s3.state import serialize_env_actions, serialize_env_states
+from luxai_s3.utils import to_numpy
 
 class LuxAIS3GymEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, numpy_output: bool = False):
+        self.numpy_output = numpy_output
         self.rng_key = jax.random.key(0)
         self.jax_env = LuxAIS3Env(auto_reset=False)
         self.env_params: EnvParams = EnvParams()
@@ -52,17 +54,26 @@ class LuxAIS3GymEnv(gym.Env):
             self.rng_key = jax.random.key(seed)
         self.rng_key, reset_key = jax.random.split(self.rng_key)
         # generate random game parameters
+        # TODO (stao): check why this keeps recompiling when marking structs as static args
         params = EnvParams(max_steps_in_match=50)
         if options is not None and "params" in options:
             params = options["params"]
         
         self.env_params = params
         obs, self.state = self.jax_env.reset(reset_key, params=params)
+        if self.numpy_output:
+            obs = to_numpy(obs)
         return obs, dict(params=params, state=self.state)
     
     def step(self, action: Any) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         self.rng_key, step_key = jax.random.split(self.rng_key)
         obs, self.state, reward, terminated, truncated, info = self.jax_env.step(step_key, self.state, action, self.env_params)
+        if self.numpy_output:
+            obs = to_numpy(obs)
+            reward = to_numpy(reward)
+            terminated = to_numpy(terminated)
+            truncated = to_numpy(truncated)
+            # info = to_numpy(info)
         return obs, reward, terminated, truncated, info
 
 # TODO: vectorized gym wrapper

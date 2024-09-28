@@ -57,7 +57,7 @@ class Bot:
 
         observations = copy.deepcopy(
             dict(
-                obs=obs,
+                # obs=obs,
                 step=step,
                 remainingOverageTime=self.remainingOverageTime,
                 player=self.agent,
@@ -81,11 +81,10 @@ class Bot:
                     timeout=self.remainingOverageTime + self.time_per_step,
                 )
         except asyncio.TimeoutError:
-            action, stderr = None, None
+            action = None
         except:
-            action, stderr = None, None
+            import ipdb;ipdb.set_trace()
         time_used = time.time() - stime
-
         if stderr != "" and stderr is not None:
             self.log.err(f"stderr:\n{stderr}")
 
@@ -99,10 +98,8 @@ class Bot:
         else:
             try:
                 if isinstance(action, dict):
-                    return action
-                action = json.loads(action)
-                if not isinstance(action, dict):
-                    raise ValueError("")
+                    return action["action"]
+                action = json.loads(action)["action"]
             except:
                 self.log.err(f"cannot parse action '{action}'")
                 action = None

@@ -10,7 +10,7 @@ from luxai_runner.episode import Episode, EpisodeConfig, ReplayConfig
 from luxai_runner.logger import Logger
 from luxai_runner.tournament import Tournament, TournamentConfig
 
-from luxai_s3.wrappers import LuxAIS3GymEnv
+from luxai_s3.wrappers import LuxAIS3GymEnv, RecordEpisode
 import tyro
 from dataclasses import dataclass, field
 from typing import Optional
@@ -64,7 +64,7 @@ def main():
         np.random.seed(args.seed)
     cfg = EpisodeConfig(
         players=args.players,
-        env_cls=LuxAIS3GymEnv,
+        env_cls=lambda **kwargs: RecordEpisode(LuxAIS3GymEnv(numpy_output=True), save_dir=args.output),
         seed=args.seed,
         env_cfg=dict(
             # verbose=args.verbose,
@@ -119,7 +119,7 @@ def main():
         asyncio.run(eps.run())
         etime = time.time()
         print(etime - stime)
-
+        eps.env.close()
 
 if __name__ == "__main__":
     main()
