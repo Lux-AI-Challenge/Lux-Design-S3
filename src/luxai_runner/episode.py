@@ -173,14 +173,6 @@ window.episode = {json.dumps(replay)};
             # state_obs = new_state_obs["player_0"]
             # obs = to_json(change_obs)
             obs = to_json(new_state_obs)
-            # if save_replay:
-            #     if self.cfg.replay_options.compressed_obs:
-            #         replay["observations"].append(change_obs)
-            #     else:
-            #         replay["observations"].append(self.env.state.get_obs())
-            #     replay["actions"].append(actions)
-            #     replay["rewards"].append(rewards)
-            #     replay["dones"].append(dones)
 
             if self.cfg.render:
                 self.env.render()
