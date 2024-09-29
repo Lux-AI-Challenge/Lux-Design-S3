@@ -55,12 +55,12 @@ if __name__ == "__main__":
     #     f.write("test")
     while True:
         inputs = read_input()
-        if i == 0:
-            obs = json.loads(inputs)
-            import time
+        # if i == 0:
+        obs = json.loads(inputs)
+            # import time
             
-            # if obs["player"] == "player_0":
-            # time.sleep(2)
+            # # if obs["player"] == "player_0":
+            # # time.sleep(2)
             # with open(f"inputs_{i}.txt", "w") as f:
             #     f.write(inputs)
         
@@ -69,6 +69,10 @@ if __name__ == "__main__":
         if i == 0:
             obs = json.loads(inputs)
             env_cfg = obs["info"]["env_cfg"]
+            player_id = obs["player"]
+        if i == 35 and player_id == "player_0":
+            with open(f"inputs_{i}.txt", "w") as f:
+                f.write(inputs)
         i += 1
         actions = np.random.randint(0, 5, env_cfg["max_units"], dtype=int)
         # actions = agent_fn(observation, dict(env_cfg=configurations))

@@ -319,16 +319,37 @@ class LuxAIS3Env(environment.Environment):
     # @functools.partial(jax.jit, static_argnums=(0, 2))
     def get_obs(self, state: EnvState, params=None, key=None) -> EnvObs:
         """Return observation from raw state, handling partial observability."""
-        obs = EnvObs(
-            sensor_mask=state.sensor_mask,
-            map_features=MapTile(
-                energy=jnp.where(state.sensor_mask, state.map_features.energy, -1),
-                tile_type=jnp.where(state.sensor_mask, state.map_features.tile_type, -1),
-            ),
-            team_points=state.team_points,
-            steps=state.steps,
-            match_steps=state.match_steps
-        )
+        # determine correct unit mask for units that are visible
+        # unit_mask = jnp.logical_and(state.units_mask, jax.vmap(lambda t: state.sensor_mask[t, state.units.position[t, u, 0], state.units.position[t, u, 1]])(jnp.arange(state.units.position.shape[0]))) for u in range(state.units.position.shape[1]))
+        
+        obs = dict()
+        
+        def update_unit_mask(unit_position, unit_mask, sensor_mask):
+            return unit_mask & sensor_mask[unit_position[0], unit_position[1]]
+        def update_team_unit_mask(unit_position, unit_mask, sensor_mask):
+            return jax.vmap(update_unit_mask, in_axes=(0, 0, None))(unit_position, unit_mask, sensor_mask)
+       
+            
+        for t in range(params.num_teams):
+            other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
+            new_unit_masks = jax.vmap(update_team_unit_mask, in_axes=(0, 0, None))(state.units.position[other_team_ids], state.units_mask[other_team_ids], state.sensor_mask[t])
+            new_unit_masks = state.units_mask.at[other_team_ids].set(new_unit_masks)
+            team_obs = EnvObs(
+                units=UnitState(
+                    position=jnp.where(new_unit_masks[..., None], state.units.position, -1),
+                    energy=jnp.where(new_unit_masks[..., None], state.units.energy, -1),
+                ),
+                units_mask=new_unit_masks,
+                sensor_mask=state.sensor_mask[t],
+                map_features=MapTile(
+                    energy=jnp.where(state.sensor_mask[t], state.map_features.energy, -1),
+                    tile_type=jnp.where(state.sensor_mask[t], state.map_features.tile_type, -1),
+                ),
+                team_points=state.team_points,
+                steps=state.steps,
+                match_steps=state.match_steps
+            )
+            obs[f"player_{t}"] = team_obs
         return obs
 
     @functools.partial(jax.jit, static_argnums=(0, 2))

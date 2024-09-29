@@ -91,6 +91,13 @@ class EnvState:
 @struct.dataclass
 class EnvObs:
     """Partial observation of environment"""
+    units: UnitState
+    """Units in the environment with shape (T, N, 3) for T teams, N max units, and 3 features.
+
+    3 features are for position (x, y), and energy
+    """
+    units_mask: chex.Array
+    """Mask of units in the environment with shape (T, N) for T teams, N max units"""
     
     sensor_mask: chex.Array
     

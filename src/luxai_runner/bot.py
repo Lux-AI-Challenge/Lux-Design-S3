@@ -57,7 +57,7 @@ class Bot:
 
         observations = copy.deepcopy(
             dict(
-                # obs=obs,
+                obs=obs,
                 step=step,
                 remainingOverageTime=self.remainingOverageTime,
                 player=self.agent,

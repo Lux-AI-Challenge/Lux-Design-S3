@@ -61,7 +61,7 @@ class LuxAIS3GymEnv(gym.Env):
         self.env_params = params
         obs, self.state = self.jax_env.reset(reset_key, params=params)
         if self.numpy_output:
-            obs = to_numpy(obs)
+            obs = to_numpy(flax.serialization.to_state_dict(obs))
         return obs, dict(params=params, state=self.state)
     
     def step(self, action: Any) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
