@@ -64,7 +64,7 @@ def main():
         np.random.seed(args.seed)
     cfg = EpisodeConfig(
         players=args.players,
-        env_cls=lambda **kwargs: RecordEpisode(LuxAIS3GymEnv(numpy_output=True), save_dir=args.output),
+        env_cls=lambda **kwargs: RecordEpisode(LuxAIS3GymEnv(numpy_output=True), save_on_close=False),
         seed=args.seed,
         env_cfg=dict(
             # verbose=args.verbose,
@@ -100,10 +100,10 @@ def main():
         tournament_config.agents = args.players
 
         tournament_config.max_concurrent_episodes = getattr(
-            args, "tournament_cfg.concurrent"
+            args, "tournament_cfg_concurrent"
         )
         tournament_config.ranking_system = getattr(
-            args, "tournament_cfg.ranking_system"
+            args, "tournament_cfg_ranking_system"
         )
         tourney = Tournament(
             cfg=tournament_config, episode_cfg=cfg  # the base/default episode config
@@ -119,7 +119,6 @@ def main():
         asyncio.run(eps.run())
         etime = time.time()
         print(etime - stime)
-        eps.env.close()
 
 if __name__ == "__main__":
     main()

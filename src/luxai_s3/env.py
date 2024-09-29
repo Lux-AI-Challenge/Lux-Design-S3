@@ -222,8 +222,9 @@ class LuxAIS3Env(environment.Environment):
         state = state.replace(
             team_points=state.team_points + team_scores
         )
-
-        reward = jnp.array(0.0)
+        reward = dict()
+        for k in range(params.num_teams):
+            reward[f"team_{k}"] = team_scores[k]
         terminated = self.is_terminal(state, params)
 
         # if match ended, then remove all units
@@ -297,13 +298,11 @@ class LuxAIS3Env(environment.Environment):
         # all agents terminate/truncate at same time
         terminated_dict = dict()
         truncated_dict = dict()
-        reward_dict = dict()
         for k in range(params.num_teams):
             terminated_dict[f"team_{k}"] = terminated
             truncated_dict[f"team_{k}"] = truncated
-            reward_dict[f"team_{k}"] = reward
             info[f"team_{k}"] = dict()
-        return obs, state, reward_dict, terminated_dict, truncated_dict, info
+        return obs, state, reward, terminated_dict, truncated_dict, info
 
     @functools.partial(jax.jit, static_argnums=(0, 2))
     def reset(

@@ -83,3 +83,7 @@ There are a number of randomized game paramteres which can modify and even disab
 - `params.nebula_tile_vision_reduction` - 0 to 3
 - `params.unit_sensor_range` - 1 to 3
 - `params.unit_move_cost` - 1 to 5
+
+## Using the Visualizer
+
+The visualizer will display the state of the environment at time step `t` out of some max number indicated in the page under the map. Actions taken at timestep `t` will affect the state of the game and be reflected in the next timestep `t+1`.

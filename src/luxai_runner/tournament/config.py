@@ -4,7 +4,7 @@ from typing import Dict, List
 
 @dataclass
 class TournamentConfig:
-    name: str = "luxai_s2_tourney"
+    name: str = "luxai_s3_tourney"
     tournament_type: str = "leadeboard"  # roundrobin, leaderboard
     ranking_system: str = "elo"  # elo, win/loss, TODO: Bradley-Terry
     ranking_system_cfg: Dict = field(default_factory=dict)

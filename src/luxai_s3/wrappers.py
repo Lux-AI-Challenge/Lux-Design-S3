@@ -79,7 +79,7 @@ class LuxAIS3GymEnv(gym.Env):
 # TODO: vectorized gym wrapper
 
 class RecordEpisode(gym.Wrapper):
-    def __init__(self, env: LuxAIS3GymEnv, save_dir: str, save_on_close: bool = True, save_on_reset: bool = True):
+    def __init__(self, env: LuxAIS3GymEnv, save_dir: str = None, save_on_close: bool = True, save_on_reset: bool = True):
         super().__init__(env)
         self.episode = dict(states=[], actions=[], metadata=dict())
         self.episode_id = 0
@@ -87,9 +87,9 @@ class RecordEpisode(gym.Wrapper):
         self.save_on_close = save_on_close
         self.save_on_reset = save_on_reset
         self.episode_steps = 0
-        from pathlib import Path
-        Path(save_dir).mkdir(parents=True, exist_ok=True)
-        # Path(save_dir).mkdir(parents=True, exist_ok=True)
+        if save_dir is not None:
+            from pathlib import Path
+            Path(save_dir).mkdir(parents=True, exist_ok=True)
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
         if self.save_on_reset and self.episode_steps > 0:

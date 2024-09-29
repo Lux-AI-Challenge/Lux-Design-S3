@@ -84,6 +84,8 @@ class EnvState:
     match_steps: int = 0
     """steps taken in the current match"""
 
+    def get_obs(self):
+        return self
 
 def serialize_env_states(env_states: list[EnvState]):
     def serialize_array(root: EnvState, arr, key_path: str = ""):

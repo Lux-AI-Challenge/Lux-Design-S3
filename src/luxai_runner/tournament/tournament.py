@@ -126,6 +126,7 @@ class Tournament:
         self.ranking_sys.update(
             players["player_0"].rank,
             players["player_1"].rank,
-            rewards["player_0"],
-            rewards["player_1"],
+            rewards["team_0"],
+            rewards["team_1"],
         )
+        eps.close()

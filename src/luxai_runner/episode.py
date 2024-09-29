@@ -39,22 +39,24 @@ class Episode:
         self.seed = cfg.seed if cfg.seed is not None else np.random.randint(9999999)
         self.players = cfg.players
 
-    def save_replay(self, replay, metadata):
+    def save_replay(self, metadata):
         save_format = self.cfg.replay_options.save_format
         if save_format not in ["json", "html"]:
             raise ValueError(f"{save_format} is not a valid save format")
+        replay = self.env.serialize_episode_data()
         replay["metadata"] = metadata
-        replay["observations"] = [to_json(x) for x in replay["observations"]]
-        replay["actions"] = [to_json(x) for x in replay["actions"]]
-        replay["default_seed"] = self.cfg.seed
-        del replay["dones"]
-        del replay["rewards"]
+        # replay["observations"] = [to_json(x) for x in replay["observations"]]
+        # replay["actions"] = [to_json(x) for x in replay["actions"]]
+        # replay["default_seed"] = self.cfg.seed
+        # del replay["dones"]
+        # del replay["rewards"]
 
         ext = f".{save_format}"
 
         from pathlib import Path
 
         dir_name = osp.dirname(self.cfg.save_replay_path)
+        import ipdb;ipdb.set_trace()
         if dir_name != "":
             Path(dir_name).mkdir(parents=True, exist_ok=True)
 
@@ -95,7 +97,7 @@ window.episode = {json.dumps(replay)};
         # Start agents
         players: Dict[str, Bot] = dict()
         start_tasks = []
-        save_replay = False#self.cfg.save_replay_path is not None
+        save_replay = self.cfg.save_replay_path is not None
         for i in range(2):
             player = Bot(self.players[i], f"team_{i}", i, verbose=self.log.verbosity)
             player.proc.log.identifier = player.log.identifier
@@ -129,12 +131,12 @@ window.episode = {json.dumps(replay)};
                 env_cfg=dataclasses.asdict(env_cfg)
             )
 
-        if save_replay:
-            replay = dict(observations=[], actions=[], dones=[], rewards=[])
-            if self.cfg.replay_options.compressed_obs:
-                replay["observations"].append(state_obs)
-            else:
-                replay["observations"].append(self.env.state.get_obs())
+        # if save_replay:
+            # replay = dict(observations=[], actions=[], dones=[], rewards=[])
+            # if self.cfg.replay_options.compressed_obs:
+            #     replay["observations"].append(state_obs)
+            # else:
+            #     replay["observations"].append(self.env.state.get_obs())
 
         i = 0
         while not game_done:
@@ -174,14 +176,14 @@ window.episode = {json.dumps(replay)};
             # state_obs = new_state_obs["player_0"]
             # obs = to_json(change_obs)
             obs = to_json(new_state_obs)
-            if save_replay:
-                if self.cfg.replay_options.compressed_obs:
-                    replay["observations"].append(change_obs)
-                else:
-                    replay["observations"].append(self.env.state.get_obs())
-                replay["actions"].append(actions)
-                replay["rewards"].append(rewards)
-                replay["dones"].append(dones)
+            # if save_replay:
+            #     if self.cfg.replay_options.compressed_obs:
+            #         replay["observations"].append(change_obs)
+            #     else:
+            #         replay["observations"].append(self.env.state.get_obs())
+            #     replay["actions"].append(actions)
+            #     replay["rewards"].append(rewards)
+            #     replay["dones"].append(dones)
 
             if self.cfg.render:
                 self.env.render()
@@ -194,7 +196,7 @@ window.episode = {json.dumps(replay)};
                 game_done = True
         self.log.info(f"Final Scores: {rewards}")
         if save_replay:
-            self.save_replay(replay, metadata)
+            self.save_replay(metadata)
 
         for player in players.values():
             await player.proc.cleanup()
