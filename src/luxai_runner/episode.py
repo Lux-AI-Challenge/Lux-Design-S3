@@ -165,6 +165,7 @@ window.episode = {json.dumps(replay)};
                             print(f"{agent_id} sent a invalid action {action}")
                     actions[agent_id] = None
             new_state_obs, rewards, terminations, truncations, infos = self.env.step(actions)
+            # import ipdb; ipdb.set_trace()
             # infos = to_numpy(infos)
             # TODO (stao): hard code to avoid using jax structs in the infos and sending those.
             infos = dict(player_0=dict(), player_1=dict())

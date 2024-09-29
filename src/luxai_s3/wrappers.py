@@ -3,6 +3,7 @@ import json
 import os
 from typing import Any, SupportsFloat
 import flax
+import flax.serialization
 import gymnasium as gym
 import gymnax
 import gymnax.environments.spaces
@@ -67,11 +68,12 @@ class LuxAIS3GymEnv(gym.Env):
         self.rng_key, step_key = jax.random.split(self.rng_key)
         obs, self.state, reward, terminated, truncated, info = self.jax_env.step(step_key, self.state, action, self.env_params)
         if self.numpy_output:
-            obs = to_numpy(obs)
+            # obs = to_numpy(obs)
+            obs = to_numpy(flax.serialization.to_state_dict(obs))
             reward = to_numpy(reward)
             terminated = to_numpy(terminated)
             truncated = to_numpy(truncated)
-            # info = to_numpy(info)
+            # info = to_numpy(flax.serialization.to_state_dict(info))
         return obs, reward, terminated, truncated, info
 
 # TODO: vectorized gym wrapper

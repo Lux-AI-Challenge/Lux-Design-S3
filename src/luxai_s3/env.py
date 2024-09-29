@@ -11,7 +11,7 @@ from jax import lax
 
 from luxai_s3.params import EnvParams
 from luxai_s3.spaces import MultiDiscrete
-from luxai_s3.state import ASTEROID_TILE, ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, UnitState, gen_state, spawn_unit
+from luxai_s3.state import ASTEROID_TILE, ENERGY_NODE_FNS, NEBULA_TILE, EnvObs, EnvState, MapTile, UnitState, gen_state, spawn_unit
 from luxai_s3.pygame_render import LuxAIPygameRenderer
 
 
@@ -319,11 +319,16 @@ class LuxAIS3Env(environment.Environment):
     # @functools.partial(jax.jit, static_argnums=(0, 2))
     def get_obs(self, state: EnvState, params=None, key=None) -> EnvObs:
         """Return observation from raw state, handling partial observability."""
-        obs = jnp.zeros(shape=(3, 3, 2), dtype=jnp.float32)
-        # if params.fog_of_war:
-        #     pass
-        # else:
-        #     obs = state
+        obs = EnvObs(
+            sensor_mask=state.sensor_mask,
+            map_features=MapTile(
+                energy=jnp.where(state.sensor_mask, state.map_features.energy, -1),
+                tile_type=jnp.where(state.sensor_mask, state.map_features.tile_type, -1),
+            ),
+            team_points=state.team_points,
+            steps=state.steps,
+            match_steps=state.match_steps
+        )
         return obs
 
     @functools.partial(jax.jit, static_argnums=(0, 2))

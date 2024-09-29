@@ -44,9 +44,9 @@ Move action cost is `params.unit_move_cost` which is random between 1 and 5. Sap
 
 ### Vision
 
-A team's vision is the combined vision of all units on that team. Team vision is essentially a boolean mask / matrix over the 2D map indicating whether that tile's information is visible to the team (in code it is not just 0s / gibberish).
+A team's vision is the combined vision of all units on that team. Team vision is essentially a boolean mask / matrix over the 2D map indicating whether that tile's information is visible to the team (in code it is not just 0s / gibberish). In this game, you can think of each unit having an "eye in the sky" sattelite that is capturing information about the units surroundings, but this sattelite has reduced accuracy the farther away the tile is from the unit.
 
-To determine which map tiles are visible to a unit, we compute a value known as vision power around the unit. The vision power of a tile is equal `1 + unit_vision_power - min(dx, dy)` where `dx` and `dy` are the absolute difference in the x and y coordinates between the unit and the tile. By default the unit vision power is equal to `params.unit_sensor_range`. The unit_vision_power value is reduced by `params.nebula_tile_vision_reduction` if the unit is on a nebula tile.
+To determine which map tiles are visible to a unit, we compute a value known as vision power around the unit. The vision power of a tile is equal `1 + unit_vision_power - min(dx, dy)` where `dx` and `dy` are the absolute difference in the x and y coordinates between the unit and the tile. By default the unit vision power is equal to `params.unit_sensor_range`. The `unit_vision_power` value is reduced by `params.nebula_tile_vision_reduction` if the unit is on a nebula tile.
 
 Nebula tiles have a vision reduction value of `params.nebula_tile_vision_reduction`. This number is reduced from every tile's vision power if that tile is a nebula tile.
 
@@ -54,7 +54,7 @@ For example, naturally without any nebula tiles the vision power values look lik
 
 TODO: insert small diagram
 
-When a unit is near a nebula tile, it can't see as far due to nebula tiles reducing the vision power.
+When a unit is near a nebula tile, it can't see details about some nebula tiles, but it can see tiles beyond nebula tiles.
 
 When a unit is inside a nebula tile, if the nebula vision reduction is powerful enough, the unit cannot see far if not anywhere at all.
 

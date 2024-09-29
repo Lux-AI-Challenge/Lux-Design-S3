@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from flax import struct
 
 from luxai_s3.params import MAP_TYPES, EnvParams
+from luxai_s3.utils import to_numpy
 EMPTY_TILE = 0
 NEBULA_TILE = 1
 ASTEROID_TILE = 2
@@ -86,6 +87,24 @@ class EnvState:
 
     def get_obs(self):
         return self
+    
+@struct.dataclass
+class EnvObs:
+    """Partial observation of environment"""
+    
+    sensor_mask: chex.Array
+    
+    map_features: MapTile
+    """Map features in the environment with shape (W, H, 2) for W width, H height
+    """
+    
+    team_points: chex.Array
+    """Team points in the environment with shape (T) for T teams"""
+    steps: int = 0
+    """steps taken in the environment"""
+    match_steps: int = 0
+    """steps taken in the current match"""
+    
 
 def serialize_env_states(env_states: list[EnvState]):
     def serialize_array(root: EnvState, arr, key_path: str = ""):
@@ -138,13 +157,13 @@ def serialize_env_actions(env_actions: list):
     return steps
 
 
-@struct.dataclass
-class EnvObs:
-    """Observation of the environment. A subset of the environment state due to partial observability."""
+# @struct.dataclass
+# class EnvObs:
+#     """Observation of the environment. A subset of the environment state due to partial observability."""
 
-    units: chex.Array
-    units_mask: chex.Array
-    """Mask of units in the environment with shape (T, N) for T teams, N max units"""
+#     units: chex.Array
+#     units_mask: chex.Array
+#     """Mask of units in the environment with shape (T, N) for T teams, N max units"""
 
 
 def state_to_flat_obs(state: EnvState) -> chex.Array:
@@ -270,7 +289,7 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         map_features = set_tile(map_features, 11, 12, NEBULA_TILE)
         energy_nodes = energy_nodes.at[0, :].set(jnp.array([4, 4], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[0].set(1)
-        energy_nodes = energy_nodes.at[1, :].set(jnp.array([20, 20], dtype=jnp.int16))
+        energy_nodes = energy_nodes.at[1, :].set(jnp.array([19, 19], dtype=jnp.int16))
         energy_nodes_mask = energy_nodes_mask.at[1].set(1)
         energy_node_fns = jnp.array(
             [
@@ -326,8 +345,8 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     relic_nodes_mask = relic_nodes_mask.at[0].set(True)
     relic_nodes = relic_nodes.at[1, :].set(highest_positions[1])
     relic_nodes_mask = relic_nodes_mask.at[1].set(True)
-    mirrored_pos1 = jnp.array([params.map_width - highest_positions[0][1], params.map_height - highest_positions[0][0]], dtype=jnp.int16)
-    mirrored_pos2 = jnp.array([params.map_width - highest_positions[1][1], params.map_height - highest_positions[1][0]], dtype=jnp.int16)
+    mirrored_pos1 = jnp.array([params.map_width - highest_positions[0][1]-1, params.map_height - highest_positions[0][0]-1], dtype=jnp.int16)
+    mirrored_pos2 = jnp.array([params.map_width - highest_positions[1][1]-1, params.map_height - highest_positions[1][0]-1], dtype=jnp.int16)
     # Set the mirrored positions for the other two relic nodes
     relic_nodes = relic_nodes.at[2, :].set(mirrored_pos1)
     relic_nodes_mask = relic_nodes_mask.at[2].set(True)
