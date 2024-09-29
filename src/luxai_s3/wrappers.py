@@ -22,7 +22,7 @@ class LuxAIS3GymEnv(gym.Env):
         self.env_params: EnvParams = EnvParams()
         
         # auto run compiling steps here:
-        print("Running compilation steps")
+        # print("Running compilation steps")
         key = jax.random.key(0)
         # Reset the environment
         dummy_env_params = EnvParams(map_type=0)
@@ -34,15 +34,13 @@ class LuxAIS3GymEnv(gym.Env):
         # Step the environment and compile. Not sure why 2 steps? are needed
         for _ in range(2):
             key, subkey = jax.random.split(key)
-            print(action)
             obs, state, reward, terminated, truncated, info = self.jax_env.step(
                 subkey, state, action, params=dummy_env_params
             )
-        print("Finish compilation steps")
-        # import ipdb;ipdb.set_trace()
+        # print("Finish compilation steps")
         self.action_space = gym.spaces.Dict(dict(
-            team_0=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5),
-            team_1=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5)
+            player_0=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5),
+            player_1=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5)
         ))
     
     def render(self):

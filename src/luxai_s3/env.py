@@ -123,7 +123,7 @@ class LuxAIS3Env(environment.Environment):
         state = self.compute_energy_features(state, params)
 
         # state = state.replace() # TODO (stao)
-        action = jnp.stack([action["team_0"], action["team_1"]])
+        action = jnp.stack([action["player_0"], action["player_1"]])
         ### process unit movement ###
         # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left
         # Define movement directions
@@ -224,7 +224,7 @@ class LuxAIS3Env(environment.Environment):
         )
         reward = dict()
         for k in range(params.num_teams):
-            reward[f"team_{k}"] = team_scores[k]
+            reward[f"player_{k}"] = team_scores[k]
         terminated = self.is_terminal(state, params)
 
         # if match ended, then remove all units
@@ -299,9 +299,9 @@ class LuxAIS3Env(environment.Environment):
         terminated_dict = dict()
         truncated_dict = dict()
         for k in range(params.num_teams):
-            terminated_dict[f"team_{k}"] = terminated
-            truncated_dict[f"team_{k}"] = truncated
-            info[f"team_{k}"] = dict()
+            terminated_dict[f"player_{k}"] = terminated
+            truncated_dict[f"player_{k}"] = truncated
+            info[f"player_{k}"] = dict()
         return obs, state, reward, terminated_dict, truncated_dict, info
 
     @functools.partial(jax.jit, static_argnums=(0, 2))
@@ -343,7 +343,7 @@ class LuxAIS3Env(environment.Environment):
     def action_space(self, params: EnvParams):
         """Action space of the environment."""
         size = np.ones(params.max_units) * 5
-        return spaces.Dict(dict(team_0=MultiDiscrete(size), team_1=MultiDiscrete(size)))
+        return spaces.Dict(dict(player_0=MultiDiscrete(size), player_1=MultiDiscrete(size)))
 
     def observation_space(self, params: EnvParams):
         """Observation space of the environment."""

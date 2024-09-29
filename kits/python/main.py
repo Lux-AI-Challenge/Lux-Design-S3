@@ -55,8 +55,14 @@ if __name__ == "__main__":
     #     f.write("test")
     while True:
         inputs = read_input()
-        # with open(f"inputs_{i}.txt", "w") as f:
-        #     f.write(inputs)
+        if i == 0:
+            obs = json.loads(inputs)
+            import time
+            
+            # if obs["player"] == "player_0":
+            # time.sleep(2)
+            # with open(f"inputs_{i}.txt", "w") as f:
+            #     f.write(inputs)
         
         # print(inputs)
         # observation = Namespace(**dict(step=obs["step"], obs=json.dumps(obs["obs"]), remainingOverageTime=obs["remainingOverageTime"], player=obs["player"], info=obs["info"]))
@@ -64,8 +70,7 @@ if __name__ == "__main__":
             obs = json.loads(inputs)
             env_cfg = obs["info"]["env_cfg"]
         i += 1
-        actions = np.zeros(env_cfg["max_units"], dtype=int) + 1
+        actions = np.random.randint(0, 5, env_cfg["max_units"], dtype=int)
         # actions = agent_fn(observation, dict(env_cfg=configurations))
-        # # send actions to engine
+        # send actions to engine
         print(json.dumps(dict(action=actions.tolist())))
-        # print([0, 0, 0, 0, 0, 0])

@@ -142,7 +142,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
   if (data.metadata) {
     if (data.metadata['players']) {
       for (let i = 0; i < 2; i++) {
-        metadata.teamNames[i] = data.metadata['players'][`team_${i}`];
+        metadata.teamNames[i] = data.metadata['players'][`player_${i}`];
       }
     }
     if (data.metadata['seed']) {

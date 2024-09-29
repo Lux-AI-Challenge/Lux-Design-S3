@@ -387,8 +387,8 @@ def generate_perlin_noise_2d(
     g01 = gradients[    :-d[0],d[1]:     ]
     g11 = gradients[d[0]:     ,d[1]:     ]
     # Ramps
-    print("grid", grid.shape)
-    print("g00", g00.shape)
+    # print("grid", grid.shape)
+    # print("g00", g00.shape)
     n00 = np.sum(np.dstack((grid[:,:,0]  , grid[:,:,1]  )) * g00, 2)
     n10 = np.sum(np.dstack((grid[:,:,0]-1, grid[:,:,1]  )) * g10, 2)
     n01 = np.sum(np.dstack((grid[:,:,0]  , grid[:,:,1]-1)) * g01, 2)

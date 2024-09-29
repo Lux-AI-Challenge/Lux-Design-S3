@@ -56,7 +56,6 @@ class Episode:
         from pathlib import Path
 
         dir_name = osp.dirname(self.cfg.save_replay_path)
-        import ipdb;ipdb.set_trace()
         if dir_name != "":
             Path(dir_name).mkdir(parents=True, exist_ok=True)
 
@@ -99,7 +98,7 @@ window.episode = {json.dumps(replay)};
         start_tasks = []
         save_replay = self.cfg.save_replay_path is not None
         for i in range(2):
-            player = Bot(self.players[i], f"team_{i}", i, verbose=self.log.verbosity)
+            player = Bot(self.players[i], f"player_{i}", i, verbose=self.log.verbosity)
             player.proc.log.identifier = player.log.identifier
             players[player.agent] = player
             start_tasks += [player.proc.start()]
@@ -109,7 +108,7 @@ window.episode = {json.dumps(replay)};
         metadata = dict()
 
         obs, _ = self.env.reset(seed=self.seed)
-        env_cfg = self.env.env_params
+        env_cfg = self.env.get_wrapper_attr("env_params")
         # state_obs = self.env.get_compressed_obs()
         obs = to_json(obs)
 
@@ -168,7 +167,7 @@ window.episode = {json.dumps(replay)};
             new_state_obs, rewards, terminations, truncations, infos = self.env.step(actions)
             # infos = to_numpy(infos)
             # TODO (stao): hard code to avoid using jax structs in the infos and sending those.
-            infos = dict(team_0=dict(), team_1=dict())
+            infos = dict(player_0=dict(), player_1=dict())
             dones = dict()
             for k in terminations:
                 dones[k] = terminations[k] | truncations[k]
