@@ -111,7 +111,7 @@ class LuxAIS3Env(environment.Environment):
         state = state.replace(sensor_mask=sensor_mask)
         state = state.replace(vision_power_map=vision_power_map)
         return state
-
+    # @functools.partial(jax.jit, static_argnums=(0, 4))
     def step_env(
         self,
         key: chex.PRNGKey,
@@ -124,8 +124,9 @@ class LuxAIS3Env(environment.Environment):
 
         # state = state.replace() # TODO (stao)
         action = jnp.stack([action["player_0"], action["player_1"]])
-        ### process unit movement ###
-        # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left
+        
+        """ process unit movement """
+        # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left, 5 is sap
         # Define movement directions
         directions = jnp.array(
             [
@@ -153,19 +154,44 @@ class LuxAIS3Env(environment.Environment):
                     [params.map_width - 1, params.map_height - 1], dtype=jnp.int16
                 ),
             )
-            unit_moved = mask & ~is_blocked & enough_energy
+            unit_moved = mask & ~is_blocked & enough_energy & (action < 5)
             # Update the unit's position only if it's active
             # import ipdb; ipdb.set_trace()
             return UnitState(position=jnp.where(unit_moved, new_pos, unit.position), energy=jnp.where(unit_moved, unit.energy - params.unit_move_cost, unit.energy))
 
         # Move units for both teams
+        move_actions = action[..., 0]
+        # print(move_actions.shape)
         state = state.replace(
             units=jax.vmap(
                 lambda team_units, team_action, team_mask: jax.vmap(move_unit, in_axes=(0, 0, 0))(
                     team_units, team_action, team_mask
                 ), in_axes=(0, 0, 0)
-            )(state.units, action, state.units_mask)
+            )(state.units, move_actions, state.units_mask)
         )
+        
+        """apply sap actions"""
+        sap_action_mask = action[..., 0] == 5
+        sap_action_deltas = action[..., 1:]
+        def sap_unit(all_units: UnitState, sap_action_mask, sap_action_deltas, units_mask):
+            current_energy = all_units.energy
+            for t in range(params.num_teams):
+                other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
+                team_sap_action_deltas = sap_action_deltas[t]
+                team_sap_action_mask = sap_action_mask[t]
+                team_sapped_positions = all_units.position[t] + team_sap_action_deltas # (max_units, 2)
+                team_unit_sapped = units_mask[t] & team_sap_action_mask & (current_energy[t, 0] >= params.unit_sap_cost) # (max_units)
+                other_units_sapped_mask = jnp.all(all_units.position[other_team_ids] == team_sapped_positions, axis=-1) # (T, max_units)
+                # TODO (stao): clean up this code. It is probably slower than it needs be and could be vmapped perhaps.
+                
+                all_units = all_units.replace(energy=all_units.energy.at[other_team_ids].set(jnp.where(other_units_sapped_mask[..., None] & team_unit_sapped[None, :, None], all_units.energy[other_team_ids] - params.unit_sap_drain, all_units.energy[other_team_ids])))
+                
+            return all_units
+            
+        state = state.replace(
+            units=sap_unit(state.units, sap_action_mask, sap_action_deltas, state.units_mask)
+        )
+        # import ipdb; ipdb.set_trace()
 
         """apply energy field to the units"""
         # Update unit energy based on the energy field of their current position
@@ -368,8 +394,11 @@ class LuxAIS3Env(environment.Environment):
 
     def action_space(self, params: EnvParams):
         """Action space of the environment."""
-        size = np.ones(params.max_units) * 5
-        return spaces.Dict(dict(player_0=MultiDiscrete(size), player_1=MultiDiscrete(size)))
+        low = np.zeros((params.max_units, 3))
+        low[:, 1:] = -params.unit_sap_range
+        high = np.ones((params.max_units, 3)) * 6
+        high[:, 1:] = params.unit_sap_range
+        return spaces.Dict(dict(player_0=MultiDiscrete(low, high), player_1=MultiDiscrete(low, high)))
 
     def observation_space(self, params: EnvParams):
         """Observation space of the environment."""
