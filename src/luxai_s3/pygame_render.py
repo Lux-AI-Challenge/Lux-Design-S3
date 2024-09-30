@@ -1,7 +1,10 @@
 from luxai_s3.params import EnvParams
 from luxai_s3.state import ASTEROID_TILE, NEBULA_TILE, EnvState
 import numpy as np
-import pygame
+try:
+    import pygame
+except:
+    pass
 
 TILE_SIZE = 64
 

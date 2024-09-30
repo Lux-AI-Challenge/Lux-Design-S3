@@ -17,25 +17,31 @@ def agent_fn(observation, configurations):
     """
     global agent_dict
     step = observation.step
-    
-    
-    player = observation.player
-    remainingOverageTime = observation.remainingOverageTime
+    # print(configurations)
     if step == 0:
-        env_cfg = EnvConfig.from_dict(configurations["env_cfg"])
-        agent_dict[player] = Agent(player, env_cfg)
-        agent_prev_obs[player] = dict()
-        agent = agent_dict[player]
-    agent = agent_dict[player]
-    obs = process_obs(player, agent_prev_obs[player], step, json.loads(observation.obs))
-    agent_prev_obs[player] = obs
-    agent.step = step
-    if obs["real_env_steps"] < 0:
-        actions = agent.early_setup(step, obs, remainingOverageTime)
-    else:
-        actions = agent.act(step, obs, remainingOverageTime)
+        with open(f"inputs_{step}.txt", "w") as f:
+            # f.write(str(observation.obs))
+            f.write(str(observation.__dict__))
+    env_cfg = configurations["env_cfg"]
+    return dict(action=np.random.randint(0, 5, env_cfg["max_units"], dtype=int))
+    
+    # player = observation.player
+    # remainingOverageTime = observation.remainingOverageTime
+    # if step == 0:
+    #     env_cfg = EnvConfig.from_dict(configurations["env_cfg"])
+    #     agent_dict[player] = Agent(player, env_cfg)
+    #     agent_prev_obs[player] = dict()
+    #     agent = agent_dict[player]
+    # agent = agent_dict[player]
+    # obs = process_obs(player, agent_prev_obs[player], step, json.loads(observation.obs))
+    # agent_prev_obs[player] = obs
+    # agent.step = step
+    # if obs["real_env_steps"] < 0:
+    #     actions = agent.early_setup(step, obs, remainingOverageTime)
+    # else:
+    #     actions = agent.act(step, obs, remainingOverageTime)
 
-    return process_action(actions)
+    # return process_action(actions)
 
 if __name__ == "__main__":
     
