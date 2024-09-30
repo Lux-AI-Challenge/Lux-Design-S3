@@ -69,7 +69,7 @@ export function HomePage(): JSX.Element {
         <HomeCard title="Welcome!">
           {/* prettier-ignore */}
           <Text>
-            Lux Eye S2 is a visualizer for <a href={`https://www.kaggle.com/competitions/lux-ai-season-2`} target="_blank" rel="noreferrer">Lux AI Season 2</a> episodes.
+            Lux Eye S3 is a visualizer for <a href={`https://www.github.com/Lux-AI-Challenge/Lux-Design-S3`} target="_blank" rel="noreferrer">Lux AI Season 3</a> episodes.
             Load an episode below to get started.
           </Text>
         </HomeCard>
