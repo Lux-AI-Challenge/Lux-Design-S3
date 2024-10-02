@@ -232,6 +232,15 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
     });
   }, []);
 
+  const openJsonDataModal = useCallback(() => {
+    modals.openModal({
+      title: 'This Game\'s Parameters',
+      children: (
+        <pre>{JSON.stringify(episode.params, null, 2)}</pre>
+      ),
+    });
+  }, [episode]);
+
   useEffect(() => {
     if (!playing) {
       return;
@@ -308,6 +317,9 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
             <IconArrowUpRight />
           </ActionIcon>
         )}
+        <ActionIcon color="blue" variant="transparent" title="Show JSON data" onClick={openJsonDataModal}>
+          <IconKeyboard />
+        </ActionIcon>
 
         <div style={{ marginRight: 'auto' }} />
 

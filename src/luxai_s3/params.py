@@ -26,10 +26,6 @@ class EnvParams:
     """
     The unit sap cost is the amount of energy a unit uses when it saps another unit. Can change between games.
     """
-    unit_sap_drain: int = 10
-    """
-    The unit sap drain is the amount of energy a unit drains from another unit when it saps it. Can change between games.
-    """
     unit_sap_range: int = 4
     """
     The unit sap range is the range of the unit's sap action.

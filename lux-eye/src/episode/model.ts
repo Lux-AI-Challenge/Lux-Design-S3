@@ -148,7 +148,6 @@ export interface EnvParams {
   max_unit_energy: number;
   unit_move_cost: number;
   unit_sap_cost: number;
-  unit_sap_drain: number;
   unit_sap_range: number;
   max_energy_nodes: number;
   max_energy_per_tile: number;

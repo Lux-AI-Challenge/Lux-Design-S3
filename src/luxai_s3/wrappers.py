@@ -58,7 +58,9 @@ class LuxAIS3GymEnv(gym.Env):
         self.rng_key, reset_key = jax.random.split(self.rng_key)
         # generate random game parameters
         # TODO (stao): check why this keeps recompiling when marking structs as static args
-        params = EnvParams(max_steps_in_match=100)
+        self.rng_key, subkey = jax.random.split(self.rng_key)
+        nebula_tile_energy_reduction = jax.random.choice(subkey, env_params_ranges["nebula_tile_energy_reduction"])
+        params = EnvParams(max_steps_in_match=100, nebula_tile_energy_reduction=nebula_tile_energy_reduction)
         if options is not None and "params" in options:
             params = options["params"]
         
@@ -72,7 +74,6 @@ class LuxAIS3GymEnv(gym.Env):
         self.rng_key, step_key = jax.random.split(self.rng_key)
         obs, self.state, reward, terminated, truncated, info = self.jax_env.step(step_key, self.state, action, self.env_params)
         if self.numpy_output:
-            # obs = to_numpy(obs)
             obs = to_numpy(flax.serialization.to_state_dict(obs))
             reward = to_numpy(reward)
             terminated = to_numpy(terminated)

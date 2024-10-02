@@ -307,7 +307,7 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
             maxval=10,
             dtype=jnp.int16,
         )
-        >= 6
+        >= 8
     )
     # elif params.map_type == "random":
     # Apply the nebula tiles to the map_features
