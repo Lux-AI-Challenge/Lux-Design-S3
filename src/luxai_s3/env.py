@@ -161,7 +161,6 @@ class LuxAIS3Env(environment.Environment):
 
         # Move units for both teams
         move_actions = action[..., 0]
-        # print(move_actions.shape)
         state = state.replace(
             units=jax.vmap(
                 lambda team_units, team_action, team_mask: jax.vmap(move_unit, in_axes=(0, 0, 0))(

@@ -39,9 +39,13 @@ class LuxAIS3GymEnv(gym.Env):
                 subkey, state, action, params=dummy_env_params
             )
         # print("Finish compilation steps")
+        low = np.zeros((self.env_params.max_units, 3))
+        low[:, 1:] = -self.env_params.unit_sap_range
+        high = np.ones((self.env_params.max_units, 3)) * 6
+        high[:, 1:] = self.env_params.unit_sap_range
         self.action_space = gym.spaces.Dict(dict(
-            player_0=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5),
-            player_1=gym.spaces.MultiDiscrete(np.ones(self.env_params.max_units) * 5)
+            player_0=gym.spaces.Box(low=low, high=high, dtype=np.int16),
+            player_1=gym.spaces.Box(low=low, high=high, dtype=np.int16)
         ))
     
     def render(self):
