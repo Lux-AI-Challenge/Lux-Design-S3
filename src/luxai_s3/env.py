@@ -172,6 +172,7 @@ class LuxAIS3Env(environment.Environment):
         sap_action_mask = action[..., 0] == 5
         sap_action_deltas = action[..., 1:]
         def sap_unit(all_units: UnitState, sap_action_mask, sap_action_deltas, units_mask):
+            # TODO (stao): clean up this code. It is probably slower than it needs be and could be vmapped perhaps.
             current_energy = all_units.energy
             for t in range(params.num_teams):
                 other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
@@ -180,17 +181,39 @@ class LuxAIS3Env(environment.Environment):
                 team_sapped_positions = all_units.position[t] + team_sap_action_deltas # (max_units, 2)
                 team_unit_sapped = units_mask[t] & team_sap_action_mask & (current_energy[t, 0] >= params.unit_sap_cost) & (jnp.max(jnp.abs(team_sap_action_deltas), axis=-1) <= params.unit_sap_range) # (max_units)
                 team_unit_sapped = team_unit_sapped & (team_sapped_positions >= 0).all(-1) & (team_sapped_positions[:, 0] < params.map_width) & (team_sapped_positions[:, 1] < params.map_height)
-                other_units_sapped_mask = jnp.all(all_units.position[other_team_ids] == team_sapped_positions, axis=-1) # (T, max_units)
-                # TODO (stao): clean up this code. It is probably slower than it needs be and could be vmapped perhaps.
+                other_units_sapped_count = jnp.sum(jnp.all(all_units.position[other_team_ids][:, :, None] == team_sapped_positions[None], axis=-1), axis=-1, dtype=jnp.int16) # (len(other_team_ids), max_units)
+                # remove unit_sap_cost energy from opposition units that were in the middle of a sap action.
+                all_units = all_units.replace(
+                    energy=all_units.energy.at[other_team_ids].set(
+                        jnp.where(team_unit_sapped[None, :, None], 
+                            all_units.energy[other_team_ids] - params.unit_sap_cost * other_units_sapped_count[:, :, None], 
+                            all_units.energy[other_team_ids]
+                        )
+                    )
+                )
                 
-                all_units = all_units.replace(energy=all_units.energy.at[other_team_ids].set(jnp.where(other_units_sapped_mask[..., None] & team_unit_sapped[None, :, None], all_units.energy[other_team_ids] - params.unit_sap_drain, all_units.energy[other_team_ids])))
+                    # remove unit_sap_cost * unit_sap_dropoff_factor energy from opposition units that were on tiles adjacent to the center of a sap action.
+                adjacent_offsets = jnp.array([
+                    [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]
+                ])
+                team_sapped_adjacent_positions = team_sapped_positions[:, None, :] + adjacent_offsets # (max_units, len(adjacent_offsets), 2)
+                other_units_adjacent_sapped_count = jnp.sum(jnp.all(all_units.position[other_team_ids][:, :, None] == team_sapped_adjacent_positions[None], axis=-1), axis=-1, dtype=jnp.int16) # (len(other_team_ids), max_units)
+                all_units = all_units.replace(
+                    energy=all_units.energy.at[other_team_ids].set(
+                        jnp.where(team_unit_sapped[None, :, None], 
+                            all_units.energy[other_team_ids] - jnp.array(params.unit_sap_cost * params.unit_sap_dropoff_factor * other_units_adjacent_sapped_count[:, :, None], dtype=jnp.int16), 
+                            all_units.energy[other_team_ids]
+                        )
+                    )
+                )
+                
+                # remove unit_sap_cost energy from units that tried to sap some position within the unit's range
                 all_units = all_units.replace(energy=all_units.energy.at[t].set(jnp.where(team_unit_sapped[:, None], all_units.energy[t] - params.unit_sap_cost, all_units.energy[t])))
             return all_units
             
         state = state.replace(
             units=sap_unit(state.units, sap_action_mask, sap_action_deltas, state.units_mask)
         )
-        # import ipdb; ipdb.set_trace()
 
         """apply energy field to the units"""
         # Update unit energy based on the energy field of their current position

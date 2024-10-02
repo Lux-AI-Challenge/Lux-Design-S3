@@ -33,13 +33,21 @@ Nebula tiles are passable tiles with a number of features
 
 ## Units
 
-Units in the game are ships that can move one tile in 4 directions (up, right, down, left) and perform a long energy sapping action. Units can overlap with other friendly units if they move onto the same tile.
+Units in the game are ships that can move one tile in 5 directions (center, up, right, down, left) and perform a ranged energy sapping action. Units can overlap with other friendly units if they move onto the same tile. Units have a energy property which determines whether they can perform actions and start with 100 energy and can have a max of 400 energy. Energy is recharged via the energy field of the map.
 
-Units have a single property called energy which determines whether they can perform actions and start with 100 energy and can have a max of 400 energy. Actions at game start have fixed energy costs.
+### Move Actions
 
-The sap action lets a unit target a specific tile on the map within a range called `params.unit_sap_range` and reduces the energy of each unit on the target tile by `params.unit_sap_amount`. `params.unit_sap_amount` is random between 10 and 50, and `params.unit_sap_range` is random between 3 and 8.
+All move actions except moving center cost `params.unit_move_cost` energy to perform. Moving center is always free (a zero action). Attempting to move off the edge of the map results in no movement occuring but energy is still consumed. Units cannot move onto tiles with an impassible feature like an asteroid tile.
 
-Move action cost is `params.unit_move_cost` which is random between 1 and 5. Sap action cost is the same as the amount sapped which is `params.unit_sap_amount`, randomized between 10 and 50.
+### Sap Actions
+
+The sap action lets a unit target a specific tile on the map within a range called `params.unit_sap_range` and reduces the energy of each opposition unit on the target tile by `params.unit_sap_cost` while also costing `unit_sap_cost` energy to use. Moreover, any opposition units on the 8 adjacent tiles to the target tile are also sapped and their energy is reduced by `params.unit_sap_cost * params.unit_sap_dropoff_factor`.
+
+
+Sap actions are submitted to the game engine / environment as a delta x and delta y value relative to the unit's current position. The delta x and delta y value magnitudes must both be <= `params.unit_sap_range`, so the sap range is a square around the unit.
+
+
+<!-- Move action cost is `params.unit_move_cost` which is random between 1 and 5. Sap action cost is the same as the amount sapped which is `params.unit_sap_amount`, randomized between 10 and 50. -->
 
 
 ### Vision

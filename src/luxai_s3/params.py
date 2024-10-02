@@ -34,6 +34,10 @@ class EnvParams:
     """
     The unit sap range is the range of the unit's sap action.
     """
+    unit_sap_dropoff_factor: float = 0.5
+    """
+    The unit sap dropoff factor multiplied by unit_sap_drain
+    """
 
 
     # configs for energy nodes
@@ -87,7 +91,7 @@ env_params_ranges = dict(
     sensor_range=list(range(1, 4)),
     nebula_tile_vision_reduction=list(range(0,4)),
     nebula_tile_energy_reduction=[0, 10, 100],
-    unit_sap_amount=list(range(10, 51)),
+    unit_sap_cost=list(range(10, 51)),
     unit_sap_range=list(range(3, 8)),
     unit_sap_dropoff_factor=[0.5, 1],
 )
