@@ -58,7 +58,7 @@ class LuxAIS3GymEnv(gym.Env):
         self.rng_key, reset_key = jax.random.split(self.rng_key)
         # generate random game parameters
         # TODO (stao): check why this keeps recompiling when marking structs as static args
-        params = EnvParams(max_steps_in_match=50)
+        params = EnvParams(max_steps_in_match=100)
         if options is not None and "params" in options:
             params = options["params"]
         

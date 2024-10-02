@@ -1,35 +1,46 @@
 # Lux AI Season 3 Specs
 
+For documentation on the API, see [this document](https://github.com/Lux-AI-Challenge/Lux-Design-S3/blob/main/kits/). To get started developing a bot, see [our Github](https://github.com/Lux-AI-Challenge/Lux-Design-S3/).
+
+We are always looking for feedback and bug reports, if you find any issues with the code, specifications etc. please ping us on [Discord](https://discord.gg/aWJt3UAcgn) or post a [GitHub Issue](https://github.com/Lux-AI-Challenge/Lux-Design-S3/issues)
+
 ## Background
-TODO
+A story is being woven still...
 
 ## Environment
 
-In the Lux AI Challenge Season 3, two teams compete against each other on a 2D map in a best of 5 match sequence (called a game). Both teams have a pool of units they can control to gain points around the map while also trying to prevent the other team from doing the same.
+In the Lux AI Challenge Season 3, two teams compete against each other on a 2D map in a best of 5 match sequence (called a game) with each match lasting 100 time steps. Both teams have a pool of units they can control to gain points around the map while also trying to prevent the other team from doing the same.
 
 Unique to Season 3 is how various game mechanics and parameters are randomized at the start of each game and remain the same between matches in one game. Some mechanics/paramters include the map terrain/generation, how much units can see on the map, how might they be blocked by map features, etc. Each match is played with fog of war, where each team can only see what their own units can see, with everything else being hidden. Given that some mechanics are randomized between games, the specs will clearly document how they are randomized and what the possible values are. There is also a summary table of every game parameter that is randomized between games in the [Game Parameters](#game-parameters) section.
 
-A core objective of this game is a balanced strategy of exploration and exploitation. It is recommended to explore more in the first match or two before leveraging gained knowledge to win the latter matches.
+A core objective of this game is a balanced strategy of exploration and exploitation. It is recommended to explore more in the first match or two before leveraging gained knowledge about the map and opponent behavior to win the latter matches.
 
 ## Map
 
-The map is a randomly generated 2D grid of size 16x16. There are several core features that make up the map: Empty Tiles, Asteroid Tiles, Nebula Tiles, Energy Nodes, and Relic Nodes. Notably, in a game, the map is never regenerated completely between matches. Whatever is the state of the map at the end of one match is what is used for the next match.
+The map is a randomly generated 2D grid of size 24x24. There are several core features that make up the map: Empty Tiles, Asteroid Tiles, Nebula Tiles, Energy Nodes, and Relic Nodes. Notably, in a game, the map is never regenerated completely between matches. Whatever is the state of the map at the end of one match is what is used for the next match.
 
 ### Empty Tiles
 
 These are empty tiles in space without anything special about them. Units and nodes can be placed/move onto these tiles.
 
 ### Asteroid Tiles
-Asteroid tiles are impassable tiles that block anything from moving/spawning onto them.
+Asteroid tiles are impassable tiles that block anything from moving/spawning onto them. These tiles might move around over time during the map in a symmetric fashion.
 
 ### Nebula Tiles
-Nebula tiles are passable tiles with a number of features
+Nebula tiles are passable tiles with a number of features. These tiles might move around over time during the map in a symmetric fashion.
 
 *Vision Reduction*: Nebula tiles can reduce/block vision of units. Because of vision reduction it is even possible for a unit to be unable to see itself while still being able to move! See [Vision](#vision) for more details on how team vision is determined. All nebula tiles have the same vision reduction value called `params.nebula_tile_vision_reduction` which is randomized from 0 to 3. 
 
 ### Energy Nodes
 
+Energy nodes are mysterious objects that emit energy fields which can be harvested by units. These nodes might move around over time during the map in a symmetric fashion. In code, what actually occurs in each game is energy nodes are randomly generated on the map symmetrically and a random function is generated for each node. Each energy node's function is a function of distance. The energy value of a tile on a map is determined to be the sum of the energy node functions applied to the distance between tile and each node.
+<!-- TODO link to code -->
+
 ### Relic Nodes
+
+Relic nodes are objects in space that enable ships to go near it to gain team points. These relic nodes however are ancient and thus fragmented. As a result, only certain tiles near the relic nodes when a friendly ship is on it will gain points. 
+
+In code, a random 5x5 configuration / mask centered on the relic node is generated indicating which tiles yield points and which don't. Multiple ships can stack on one tile and all will gain a point each for their team per time step they remain on the tile. Note that ship stacking can be risky due to the [sapping action](#sap-actions).
 
 ## Units
 
@@ -43,8 +54,9 @@ All move actions except moving center cost `params.unit_move_cost` energy to per
 
 The sap action lets a unit target a specific tile on the map within a range called `params.unit_sap_range` and reduces the energy of each opposition unit on the target tile by `params.unit_sap_cost` while also costing `unit_sap_cost` energy to use. Moreover, any opposition units on the 8 adjacent tiles to the target tile are also sapped and their energy is reduced by `params.unit_sap_cost * params.unit_sap_dropoff_factor`.
 
-
 Sap actions are submitted to the game engine / environment as a delta x and delta y value relative to the unit's current position. The delta x and delta y value magnitudes must both be <= `params.unit_sap_range`, so the sap range is a square around the unit.
+
+Generally sap actions are risky since a single miss means your ships lose energy while the opponent does not. The area of effect can mitigate this risk somewhat depending on game parameters. Sap actions can however prove very valuable when opposition ships are heavily stacked and get hit as sapping the stacked tile hits every ship on the tile.
 
 
 <!-- Move action cost is `params.unit_move_cost` which is random between 1 and 5. Sap action cost is the same as the amount sapped which is `params.unit_sap_amount`, randomized between 10 and 50. -->
