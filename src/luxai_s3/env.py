@@ -192,7 +192,7 @@ class LuxAIS3Env(environment.Environment):
                     )
                 )
                 
-                    # remove unit_sap_cost * unit_sap_dropoff_factor energy from opposition units that were on tiles adjacent to the center of a sap action.
+                # remove unit_sap_cost * unit_sap_dropoff_factor energy from opposition units that were on tiles adjacent to the center of a sap action.
                 adjacent_offsets = jnp.array([
                     [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]
                 ])
