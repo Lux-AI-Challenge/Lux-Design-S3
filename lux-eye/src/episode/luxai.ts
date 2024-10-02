@@ -1,126 +1,57 @@
 import {
   Board,
+  Direction,
   EnvParams,
   Episode,
   EpisodeMetadata,
-  Faction,
-  FactoryAction,
   Robot,
   RobotAction,
-  RobotType,
-  SetupAction,
   Step,
   Team,
+  Tile,
   TileType,
 } from './model';
 
 function transpose<T>(matrix: T[][]): T[][] {
   return matrix[0].map((value, i) => matrix.map(row => row[i]));
 }
-
-function isSetupAction(data: any): boolean {
-  if (data === null) {
-    return false;
-  }
-
-  return (
-    (data.bid !== undefined && data.faction !== undefined) ||
-    (data.spawn !== undefined && data.water !== undefined && data.metal !== undefined) ||
-    Object.keys(data).length === 0
-  );
-}
-
-function parseSetupAction(data: any): SetupAction {
-  if (data.bid !== undefined && data.faction !== undefined) {
-    return {
-      type: 'bid',
-      bid: data.bid,
-      faction: data.faction,
-    };
-  } else if (data.spawn !== undefined && data.water !== undefined && data.metal !== undefined) {
-    return {
-      type: 'buildFactory',
-      center: {
-        x: data.spawn[0],
-        y: data.spawn[1],
-      },
-      water: data.water,
-      metal: data.metal,
-    };
-  } else if (Object.keys(data).length === 0) {
-    return {
-      type: 'wait',
-    };
-  } else {
-    throw new Error(`Cannot parse '${data}' as setup action`);
-  }
-}
-
-function parseFactoryAction(data: any): FactoryAction {
-  if (data === 0) {
-    return {
-      type: 'buildRobot',
-      robotType: RobotType.Light,
-    };
-  } else if (data === 1) {
-    return {
-      type: 'buildRobot',
-      robotType: RobotType.Heavy,
-    };
-  } else if (data === 2) {
-    return {
-      type: 'water',
-    };
-  } else {
-    throw new Error(`Cannot parse '${data}' as factory action`);
-  }
-}
-
-function parseRobotAction(data: any): RobotAction {
+function parseRobotAction(params: EnvParams, robotPosition: Tile, data: any): RobotAction {
   switch (data[0]) {
     case 0:
       return {
         type: 'move',
-        repeat: data[4],
-        n: data[5],
-        direction: data[1],
+        direction: Direction.Center,
       };
-    case 1:
-      return {
-        type: 'transfer',
-        repeat: data[4],
-        n: data[5],
-        direction: data[1],
-        resource: data[2],
-        amount: data[3],
+      case 1:
+        return {
+          type: 'move',
+          direction: Direction.Up,
+        };
+      case 2:
+        return {
+          type: 'move',
+          direction: Direction.Right,
+        };
+      case 3:
+        return {
+          type: 'move',
+        direction: Direction.Down,
       };
-    case 2:
-      return {
-        type: 'pickup',
-        repeat: data[4],
-        n: data[5],
-        resource: data[2],
-        amount: data[3],
-      };
-    case 3:
-      return {
-        type: 'dig',
-        repeat: data[4],
-        n: data[5],
-      };
-    case 4:
-      return {
-        type: 'selfDestruct',
-        repeat: data[4],
-        n: data[5],
-      };
-    case 5:
-      return {
-        type: 'recharge',
-        repeat: data[4],
-        n: data[5],
-        targetPower: data[3],
-      };
+      case 4:
+        return {
+          type: 'move',
+          direction: Direction.Left,
+        };
+      case 5:
+        const target = {
+          x: robotPosition.x + data[1],
+          y: robotPosition.y + data[2],
+        }
+        return {
+          type: 'sap',
+          target,
+          validSap: Math.max(Math.abs(data[1]), Math.abs(data[2])) <= params.unit_sap_range && target.x >= 0 && target.x < params.map_width && target.y >= 0 && target.y < params.map_height,
+        };
     default:
       throw new Error(`Cannot parse '${data}' as robot action`);
   }
@@ -161,6 +92,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       // eslint-disable-next-line @typescript-eslint/naming-convention
       player_1: {},
     };
+    let prevActions = { ...actions };
 
     if (data.observations.length === data.actions.length) {
       if (i < data.actions.length - 1) {
@@ -168,8 +100,10 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       }
     } else if (i < data.actions.length) {
       actions = data.actions[i];
+      if (i > 0) {
+        prevActions = data.actions[i - 1];
+      }
     }
-    console.log(obs.relic_nodes);
     const board: Board = {
       energy: obs.map_features.energy,
       energyNodes: obs.energy_nodes,
@@ -288,13 +222,17 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       // console.log(obs.units_mask);
       for (let unitIdx = 0; unitIdx < obs.units_mask[j].length; unitIdx++) {
         if (obs.units_mask[j][unitIdx]) {
+          const robotPosition = {
+            x: obs.units.position[j][unitIdx][0],
+            y: obs.units.position[j][unitIdx][1],
+          }
+          const robotAction = actions[`player_${j}`][unitIdx];
           robots.push({
             unitId: `unit_${unitIdx}`,
-            tile: {
-              x: obs.units.position[j][unitIdx][0],
-              y: obs.units.position[j][unitIdx][1],
-            },
+            tile: robotPosition,
             energy: parseInt(obs.units.energy[j][unitIdx]),
+            action: robotAction ? parseRobotAction(params, robotPosition, robotAction) : null,
+            prevAction: prevActions[`player_${j}`][unitIdx] ? parseRobotAction(params, robotPosition, prevActions[`player_${j}`][unitIdx]) : null,
           });
         }
       }

@@ -48,71 +48,20 @@ export interface Action {
   type: string;
 }
 
-export interface BidAction extends Action {
-  type: 'bid';
-  bid: number;
-  faction: Faction;
-}
-
-export interface BuildFactoryAction extends Action {
-  type: 'buildFactory';
-  center: Tile;
-  water: number;
-  metal: number;
-}
-
-export interface WaitAction extends Action {
-  type: 'wait';
-}
-
-export interface BuildRobotAction extends Action {
-  type: 'buildRobot';
-  robotType: RobotType;
-}
-
-export interface WaterAction extends Action {
-  type: 'water';
-}
-
-export interface RepeatableAction extends Action {
-  repeat: number;
-  n?: number;
-}
-
-export interface MoveAction extends RepeatableAction {
+export interface MoveAction extends Action {
   type: 'move';
   direction: Direction;
 }
 
-export interface TransferAction extends RepeatableAction {
-  type: 'transfer';
-  direction: Direction;
-  resource: Resource;
-  amount: number;
+export interface SapAction extends Action {
+  type: 'sap';
+  target: Tile;
+  validSap: boolean;
 }
 
-export interface PickupAction extends RepeatableAction {
-  type: 'pickup';
-  resource: Resource;
-  amount: number;
-}
-
-export interface DigAction extends RepeatableAction {
-  type: 'dig';
-}
-
-export interface SelfDestructAction extends RepeatableAction {
-  type: 'selfDestruct';
-}
-
-export interface RechargeAction extends RepeatableAction {
-  type: 'recharge';
-  targetPower: number;
-}
-
-export type SetupAction = BidAction | BuildFactoryAction | WaitAction;
-export type FactoryAction = BuildRobotAction | WaterAction;
-export type RobotAction = MoveAction | TransferAction | PickupAction | DigAction | SelfDestructAction | RechargeAction;
+// export type SetupAction = BidAction | BuildFactoryAction | WaitAction;
+// export type FactoryAction = BuildRobotAction | WaterAction;
+export type RobotAction = MoveAction | SapAction
 
 export interface Board {
   energy: number[][];
@@ -145,6 +94,8 @@ export interface Robot extends Unit {
   // type: RobotType;
   // actionQueue: RobotAction[];
   // position: number[];
+  action: RobotAction | null;
+  prevAction: RobotAction | null;
   energy: number;
 }
 

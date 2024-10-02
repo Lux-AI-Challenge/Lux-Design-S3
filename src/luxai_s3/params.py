@@ -30,7 +30,7 @@ class EnvParams:
     """
     The unit sap drain is the amount of energy a unit drains from another unit when it saps it. Can change between games.
     """
-    unit_sap_range: int = 5
+    unit_sap_range: int = 4
     """
     The unit sap range is the range of the unit's sap action.
     """
@@ -88,6 +88,6 @@ env_params_ranges = dict(
     nebula_tile_vision_reduction=list(range(0,4)),
     nebula_tile_energy_reduction=[0, 10, 100],
     unit_sap_amount=list(range(10, 51)),
-    unit_sap_range=list(range(3, 9)),
+    unit_sap_range=list(range(3, 8)),
     unit_sap_dropoff_factor=[0.5, 1],
 )

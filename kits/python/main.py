@@ -80,7 +80,7 @@ if __name__ == "__main__":
             with open(f"inputs_{i}.txt", "w") as f:
                 f.write(inputs)
         i += 1
-        actions = np.random.randint(0, 5, size=(env_cfg["max_units"], 3), dtype=int)
+        actions = np.random.randint(0, 6, size=(env_cfg["max_units"], 3), dtype=int)
         # actions = agent_fn(observation, dict(env_cfg=configurations))
         # send actions to engine
         print(json.dumps(dict(action=actions.tolist())))

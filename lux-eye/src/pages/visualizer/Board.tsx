@@ -157,13 +157,25 @@ function drawRobot(
   ctx.strokeStyle = 'black';
   ctx.lineWidth = isSelected ? 2 : 1;
 
-  const radius = config.tileSize / 2 - 1;
+  const radius = config.tileSize / 2 - 3;
 
   ctx.beginPath();
   ctx.arc(canvasX + config.tileSize / 2, canvasY + config.tileSize / 2, radius, 0, 2 * Math.PI);
   ctx.fill();
   ctx.stroke();
   ctx.restore();
+
+  if (robot.prevAction && robot.prevAction.type === 'sap' && robot.prevAction.validSap) {
+    const [canvasX, canvasY] = tileToCanvas(config, robot.tile);
+    const [targetCanvasX, targetCanvasY] = tileToCanvas(config, robot.prevAction.target);
+
+    ctx.strokeStyle = getTeamColor(team, 0.5); // Semi opaque line
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(canvasX + config.tileSize / 2, canvasY + config.tileSize / 2);
+    ctx.lineTo(targetCanvasX + config.tileSize / 2, targetCanvasY + config.tileSize / 2);
+    ctx.stroke();
+  }
 }
 
 function drawSelectedTile(ctx: CanvasRenderingContext2D, config: Config, selectedTile: Tile): void {
