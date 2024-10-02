@@ -325,7 +325,9 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     # elif params.map_type == "random":
     # Apply the nebula tiles to the map_features
     # map_features = map_features.replace(tile_type=jnp.where(nebula_map, NEBULA_TILE, EMPTY_TILE))
-    perlin_noise = generate_perlin_noise_2d( (params.map_height, params.map_width), (4, 4))
+
+    key, subkey = jax.random.split(key)
+    perlin_noise = generate_perlin_noise_2d(subkey, (params.map_height, params.map_width), (4, 4))
     noise = jnp.where(perlin_noise > 0.5, 1, 0)
     noise = noise | noise.T
     # Flip the noise matrix's rows and columns in reverse
@@ -337,10 +339,11 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
     noise = noise | noise.T
     # Flip the noise matrix's rows and columns in reverse
     noise = noise[::-1, ::1]
-    # jax.debug.breakpoint()
+
     map_features = map_features.replace(tile_type=jnp.place(map_features.tile_type, noise, 2, inplace=False))
     
-    noise = generate_perlin_noise_2d( (params.map_height, params.map_width), (4, 4))
+    key, subkey = jax.random.split(key)
+    noise = generate_perlin_noise_2d(subkey, (params.map_height, params.map_width), (4, 4))
     # Find the positions of the two highest noise values
     flat_indices = jnp.argsort(noise.ravel())[-2:]  # Get indices of two highest values
     highest_positions = jnp.column_stack(jnp.unravel_index(flat_indices, noise.shape))
@@ -370,12 +373,12 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         relic_nodes_mask=relic_nodes_mask,
         relic_node_configs=relic_node_configs,
     )
-
-import numpy as np
 def interpolant(t):
     return t*t*t*(t*(t*6 - 15) + 10)
+
+@functools.partial(jax.jit, static_argnums=(1, 2, 3, 4))
 def generate_perlin_noise_2d(
-        shape, res, tileable=(False, False), interpolant=interpolant
+    key, shape, res, tileable=(False, False), interpolant=interpolant
 ):
     """Generate a 2D numpy array of perlin noise.
 
@@ -398,11 +401,11 @@ def generate_perlin_noise_2d(
     """
     delta = (res[0] / shape[0], res[1] / shape[1])
     d = (shape[0] // res[0], shape[1] // res[1])
-    grid = np.mgrid[0:res[0]:delta[0], 0:res[1]:delta[1]]\
+    grid = jnp.mgrid[0:res[0]:delta[0], 0:res[1]:delta[1]]\
              .transpose(1, 2, 0) % 1
     # Gradients
-    angles = 2*np.pi*np.random.rand(res[0]+1, res[1]+1)
-    gradients = np.dstack((np.cos(angles), np.sin(angles)))
+    angles = 2*jnp.pi*jax.random.uniform(key, (res[0]+1, res[1]+1))
+    gradients = jnp.dstack((jnp.cos(angles), jnp.sin(angles)))
     if tileable[0]:
         gradients[-1,:] = gradients[0,:]
     if tileable[1]:
@@ -412,67 +415,14 @@ def generate_perlin_noise_2d(
     g10 = gradients[d[0]:     ,    :-d[1]]
     g01 = gradients[    :-d[0],d[1]:     ]
     g11 = gradients[d[0]:     ,d[1]:     ]
+    
     # Ramps
-    # print("grid", grid.shape)
-    # print("g00", g00.shape)
-    n00 = np.sum(np.dstack((grid[:,:,0]  , grid[:,:,1]  )) * g00, 2)
-    n10 = np.sum(np.dstack((grid[:,:,0]-1, grid[:,:,1]  )) * g10, 2)
-    n01 = np.sum(np.dstack((grid[:,:,0]  , grid[:,:,1]-1)) * g01, 2)
-    n11 = np.sum(np.dstack((grid[:,:,0]-1, grid[:,:,1]-1)) * g11, 2)
+    n00 = jnp.sum(jnp.dstack((grid[:,:,0]  , grid[:,:,1]  )) * g00, 2)
+    n10 = jnp.sum(jnp.dstack((grid[:,:,0]-1, grid[:,:,1]  )) * g10, 2)
+    n01 = jnp.sum(jnp.dstack((grid[:,:,0]  , grid[:,:,1]-1)) * g01, 2)
+    n11 = jnp.sum(jnp.dstack((grid[:,:,0]-1, grid[:,:,1]-1)) * g11, 2)
     # Interpolation
     t = interpolant(grid)
     n0 = n00*(1-t[:,:,0]) + t[:,:,0]*n10
     n1 = n01*(1-t[:,:,0]) + t[:,:,0]*n11
-    return np.sqrt(2)*((1-t[:,:,1])*n0 + t[:,:,1]*n1)
-# @functools.partial(jax.jit, static_argnums=(1, 2, 3, 4))
-# def generate_perlin_noise_2d(
-#     key, shape, res, tileable=(False, False), interpolant=interpolant
-# ):
-#     """Generate a 2D numpy array of perlin noise.
-
-#     Args:
-#         shape: The shape of the generated array (tuple of two ints).
-#             This must be a multple of res.
-#         res: The number of periods of noise to generate along each
-#             axis (tuple of two ints). Note shape must be a multiple of
-#             res.
-#         tileable: If the noise should be tileable along each axis
-#             (tuple of two bools). Defaults to (False, False).
-#         interpolant: The interpolation function, defaults to
-#             t*t*t*(t*(t*6 - 15) + 10).
-
-#     Returns:
-#         A numpy array of shape shape with the generated noise.
-
-#     Raises:
-#         ValueError: If shape is not a multiple of res.
-#     """
-#     delta = (res[0] / shape[0], res[1] / shape[1])
-#     d = (shape[0] // res[0], shape[1] // res[1])
-#     grid = jnp.mgrid[0:res[0]:delta[0], 0:res[1]:delta[1]]\
-#              .transpose(1, 2, 0) % 1
-#     # Gradients
-#     # angles = 2*np.pi*np.random.rand(res[0]+1, res[1]+1)
-#     angles = 2*jnp.pi*jax.random.uniform(key,minval=res[0]+1, maxval=res[1]+1)
-#     gradients = jnp.dstack((jnp.cos(angles), jnp.sin(angles)))
-#     if tileable[0]:
-#         gradients[-1,:] = gradients[0,:]
-#     if tileable[1]:
-#         gradients[:,-1] = gradients[:,0]
-#     gradients = gradients.repeat(d[0], 0).repeat(d[1], 1)
-#     g00 = gradients[    :-d[0],    :-d[1]]
-#     g10 = gradients[d[0]:     ,    :-d[1]]
-#     g01 = gradients[    :-d[0],d[1]:     ]
-#     g11 = gradients[d[0]:     ,d[1]:     ]
-#     # Ramps
-#     print(grid.shape)
-#     print(g00.shape)
-#     n00 = jnp.sum(jnp.dstack((grid[:,:,0]  , grid[:,:,1]  )) * g00, 2)
-#     n10 = jnp.sum(jnp.dstack((grid[:,:,0]-1, grid[:,:,1]  )) * g10, 2)
-#     n01 = jnp.sum(jnp.dstack((grid[:,:,0]  , grid[:,:,1]-1)) * g01, 2)
-#     n11 = jnp.sum(jnp.dstack((grid[:,:,0]-1, grid[:,:,1]-1)) * g11, 2)
-#     # Interpolation
-#     t = interpolant(grid)
-#     n0 = n00*(1-t[:,:,0]) + t[:,:,0]*n10
-#     n1 = n01*(1-t[:,:,0]) + t[:,:,0]*n11
-#     return np.sqrt(2)*((1-t[:,:,1])*n0 + t[:,:,1]*n1)
+    return jnp.sqrt(2)*((1-t[:,:,1])*n0 + t[:,:,1]*n1)
