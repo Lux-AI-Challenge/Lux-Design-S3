@@ -3,6 +3,7 @@ import chex
 import flax
 import jax
 import jax.numpy as jnp
+import numpy as np
 from flax import struct
 
 from luxai_s3.params import MAP_TYPES, EnvParams
@@ -84,9 +85,6 @@ class EnvState:
     """steps taken in the environment"""
     match_steps: int = 0
     """steps taken in the current match"""
-
-    def get_obs(self):
-        return self
     
 @struct.dataclass
 class EnvObs:
@@ -131,7 +129,6 @@ def serialize_env_states(env_states: list[EnvState]):
                 if new_val is not None:
                     ret[k] = new_val
             return ret
-# TODO (stao): to optimize save file we can store deltas of map info instead. might not be able to do this with kaggle replays though.
         return arr
     steps = []
     for state in env_states:
@@ -162,16 +159,6 @@ def serialize_env_actions(env_actions: list):
         steps.append(serialize_array(state))
 
     return steps
-
-
-# @struct.dataclass
-# class EnvObs:
-#     """Observation of the environment. A subset of the environment state due to partial observability."""
-
-#     units: chex.Array
-#     units_mask: chex.Array
-#     """Mask of units in the environment with shape (T, N) for T teams, N max units"""
-
 
 def state_to_flat_obs(state: EnvState) -> chex.Array:
     pass
