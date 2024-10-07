@@ -26,7 +26,7 @@ class LuxAIS3GymEnv(gym.Env):
         # print("Running compilation steps")
         key = jax.random.key(0)
         # Reset the environment
-        dummy_env_params = EnvParams(map_type=0)
+        dummy_env_params = EnvParams(map_type=1)
         key, reset_key = jax.random.split(key)
         obs, state = self.jax_env.reset(reset_key, params=dummy_env_params)
         # Take a random action

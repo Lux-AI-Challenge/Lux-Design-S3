@@ -5,7 +5,7 @@ MAP_TYPES = ["dev0", "random"]
 @struct.dataclass
 class EnvParams:
     max_steps_in_match: int = 100
-    map_type: int = 0
+    map_type: int = 1
     """Map generation algorithm. Can change between games"""
     map_width: int = 24
     map_height: int = 24
@@ -37,12 +37,12 @@ class EnvParams:
 
 
     # configs for energy nodes
-    max_energy_nodes: int = 10
+    max_energy_nodes: int = 6
     max_energy_per_tile: int = 20
     min_energy_per_tile: int = -20
 
 
-    max_relic_nodes: int = 10
+    max_relic_nodes: int = 6
     relic_config_size: int = 5
     fog_of_war: bool = True
     """
