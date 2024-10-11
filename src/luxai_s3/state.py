@@ -102,6 +102,10 @@ class EnvObs:
     map_features: MapTile
     """Map features in the environment with shape (W, H, 2) for W width, H height
     """
+    relic_nodes: chex.Array
+    """Position of all relic nodes with shape (N, 2) for N max relic nodes and 2 features for position (x, y). Number is -1 if not visible"""
+    relic_nodes_mask: chex.Array
+    """Mask of all relic nodes with shape (N) for N max relic nodes"""
     
     team_points: chex.Array
     """Team points in the environment with shape (T) for T teams"""

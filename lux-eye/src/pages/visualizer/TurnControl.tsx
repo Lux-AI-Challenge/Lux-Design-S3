@@ -5,6 +5,7 @@ import {
   IconArrowUpRight,
   IconChevronsLeft,
   IconChevronsRight,
+  IconInfoCircle,
   IconKeyboard,
   IconPlayerPause,
   IconPlayerPlay,
@@ -318,7 +319,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
           </ActionIcon>
         )}
         <ActionIcon color="blue" variant="transparent" title="Show JSON data" onClick={openJsonDataModal}>
-          <IconKeyboard />
+          <IconInfoCircle />
         </ActionIcon>
 
         <div style={{ marginRight: 'auto' }} />

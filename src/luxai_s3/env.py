@@ -378,11 +378,17 @@ class LuxAIS3Env(environment.Environment):
         def update_team_unit_mask(unit_position, unit_mask, sensor_mask):
             return jax.vmap(update_unit_mask, in_axes=(0, 0, None))(unit_position, unit_mask, sensor_mask)
        
+        def update_relic_nodes_mask(relic_nodes_mask, relic_nodes, sensor_mask):
+            return jax.vmap(lambda r_mask, r, s_mask: r_mask & s_mask[r[0], r[1]], in_axes=(0, 0, None))(relic_nodes_mask, relic_nodes, sensor_mask)
             
         for t in range(params.num_teams):
             other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
             new_unit_masks = jax.vmap(update_team_unit_mask, in_axes=(0, 0, None))(state.units.position[other_team_ids], state.units_mask[other_team_ids], state.sensor_mask[t])
             new_unit_masks = state.units_mask.at[other_team_ids].set(new_unit_masks)
+            
+            new_relic_nodes_mask = update_relic_nodes_mask(state.relic_nodes_mask, state.relic_nodes, state.sensor_mask[t])
+            # new_relic_nodes_mask = state.relic_nodes_mask.set(new_relic_nodes_mask)
+            
             team_obs = EnvObs(
                 units=UnitState(
                     position=jnp.where(new_unit_masks[..., None], state.units.position, -1),
@@ -396,7 +402,9 @@ class LuxAIS3Env(environment.Environment):
                 ),
                 team_points=state.team_points,
                 steps=state.steps,
-                match_steps=state.match_steps
+                match_steps=state.match_steps,
+                relic_nodes=jnp.where(new_relic_nodes_mask[..., None], state.relic_nodes, -1),
+                relic_nodes_mask=new_relic_nodes_mask,
             )
             obs[f"player_{t}"] = team_obs
         return obs

@@ -38,7 +38,7 @@ Energy nodes are mysterious objects that emit energy fields which can be harvest
 
 ### Relic Nodes
 
-Relic nodes are objects in space that enable ships to go near it to gain team points. These relic nodes however are ancient and thus fragmented. As a result, only certain tiles near the relic nodes when a friendly ship is on it will gain points. 
+Relic nodes are objects in space that enable ships to go near it to gain team points. These relic nodes however are ancient and thus fragmented. As a result, only certain tiles near the relic nodes when a friendly ship is on it will gain points. The tiles that yield points are always hidden and can only be discovered by trial and error by moving around the relic nodes. Relic nodes themselves can be observed.
 
 In code, a random 5x5 configuration / mask centered on the relic node is generated indicating which tiles yield points and which don't. Multiple ships can stack on one tile and all will gain a point each for their team per time step they remain on the tile. Note that ship stacking can be risky due to the [sapping action](#sap-actions).
 
@@ -78,7 +78,11 @@ When a unit is near a nebula tile, it can't see details about some nebula tiles,
 
 When a unit is inside a nebula tile, if the nebula vision reduction is powerful enough, the unit cannot see far if not anywhere at all.
 
-## Relic Nodes and Team Points
+## Win Conditions
+
+To win the game, the team must have won the most matches out of the 5 match sequence.
+
+To win a match, the team must have gained more relic points than the other team at the end of the match. If the relic points scores are tied, then the match winner is decided by who has more total unit energy. If that is also tied then the winner is chosen at random.
 
 
 ## Match Resolution Order
@@ -89,10 +93,12 @@ At each time step of a match, we run the following steps in order:
 3. Update the energy of all units based on their position
 4. Compute new team points
 5. Determine the team vision for all teams and return observations accordingly
-6. Spawn units for all teams
+6. Spawn units for all teams. Remove units that have less than 0 energy due to saps.
 7. Environment objects like asteroids/nebula tiles/energy nodes move around in space
 
 ## Game Parameters
+
+The full set of game parameters can be found here in the codebase: https://github.com/Lux-AI-Challenge/Lux-Design-S3/blob/main/src/luxai_s3/params.py
 
 ### Randomized Game Parameters / Map Generation
 
@@ -103,6 +109,8 @@ There are a number of randomized game paramteres which can modify and even disab
 - `params.nebula_tile_vision_reduction` - 0 to 3
 - `params.unit_sensor_range` - 1 to 3
 - `params.unit_move_cost` - 1 to 5
+
+These parameter ranges (and other parameters) are subject to change in the beta phase of this competition as we gather feedback and data.
 
 ## Using the Visualizer
 
