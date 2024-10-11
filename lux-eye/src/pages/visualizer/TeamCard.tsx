@@ -96,36 +96,19 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
       <Space h="xs" />
 
       <Grid columns={2} gutter={0}>
-        {/* <Grid.Col span={1}>
-          <b>Lichen:</b> {funcLichen(team, step.board)}
-        </Grid.Col> */}
         <Grid.Col span={1}>
           <b>Ships:</b> {sortedRobots.length}
+        </Grid.Col>
+        <Grid.Col span={1}>
+          <b>Points:</b> {team.points}
+        </Grid.Col>
+        <Grid.Col span={1}>
+          <b>Wins:</b> {team.wins}
         </Grid.Col>
         {team.error && (
           <Grid.Col span={2}>
             <b>Error:</b> {team.error}
           </Grid.Col>
-        )}
-
-        {step.step < 0 && (
-          <>
-            <Grid.Col span={1}>
-              <b>Points:</b> {team.points}
-            </Grid.Col>
-            {/* <Grid.Col span={1}>
-              <b>Metal:</b> {team.metal}
-            </Grid.Col>
-            <Grid.Col span={1}>
-              <b>Place first:</b> {team.placeFirst ? 'Yes' : 'No'}
-            </Grid.Col>
-            <Grid.Col span={1}>
-              <b>Factories left:</b> {team.factoriesToPlace}
-            </Grid.Col>
-            <Grid.Col span={2}>
-              <b>Action:</b> {team.action !== null ? formatAction(team.action) : 'None'}
-            </Grid.Col> */}
-          </>
         )}
       </Grid>
 
@@ -133,19 +116,8 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
 
       <Tabs defaultValue="robots" keepMounted={false} color={id === 0 ? 'blue' : 'red'}>
         <Tabs.List mb="xs" grow>
-          {/* <Tabs.Tab value="factories">Factories</Tabs.Tab> */}
           <Tabs.Tab value="robots">Robots</Tabs.Tab>
         </Tabs.List>
-        {/* 
-        <Tabs.Panel value="factories">
-          <UnitList
-            name="factories"
-            height={tabHeight}
-            itemCount={sortedFactories.length}
-            itemRenderer={factoryRenderer}
-            tileGetter={factoryTileGetter}
-          />
-        </Tabs.Panel> */}
         <Tabs.Panel value="robots">
           <UnitList
             name="robots"

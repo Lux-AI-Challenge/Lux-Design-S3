@@ -122,9 +122,10 @@ class LuxAIS3Env(environment.Environment):
         
         state = self.compute_energy_features(state, params)
 
-        # state = state.replace() # TODO (stao)
         action = jnp.stack([action["player_0"], action["player_1"]])
         
+        # remove all units if the match ended in the previous step indicated by a reset of match_steps to 0
+        state = state.replace(units_mask=jnp.where(state.match_steps == 0, jnp.zeros_like(state.units_mask), state.units_mask))
         """ process unit movement """
         # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left, 5 is sap
         # Define movement directions
@@ -251,18 +252,9 @@ class LuxAIS3Env(environment.Environment):
         state = state.replace(map_features=state.map_features.replace(tile_type=new_tile_types_map), energy_nodes=new_energy_nodes)
 
         
-        # # Compute relic scores
-        # def compute_relic_score(unit, relic_nodes_map_weights, mask):
-        #     total_score = relic_nodes_map_weights[unit.position[0], unit.position[1]]
-        #     return total_score & mask
-
+        # Compute relic scores
         def team_relic_score(unit_counts_map):
             scores = (unit_counts_map > 0) & state.relic_nodes_map_weights
-            # scores = jax.vmap(compute_relic_score, in_axes=(0, None, 0))(
-            #     units,
-            #     state.relic_nodes_map_weights,
-            #     units_mask,
-            # )
             return jnp.sum(scores, dtype=jnp.int32)
         # map of total units per team on each tile, shape (num_teams, map_width, map_height)
         unit_counts_map = jnp.zeros((params.num_teams, params.map_width, params.map_height), dtype=jnp.int32)
@@ -273,21 +265,20 @@ class LuxAIS3Env(environment.Environment):
             unit_counts_map = unit_counts_map.at[t].add(jnp.sum(jax.vmap(update_unit_counts_map, in_axes=(0, 0, None), out_axes=0)(state.units.position[t], state.units_mask[t], unit_counts_map[t]), axis=0))
 
         team_scores = jax.vmap(team_relic_score)(unit_counts_map)
-        # team_1_score = team_relic_score(state.units[1], state.units_mask[1])
-        # jax.debug.print("{team_scores}", team_scores=team_scores)
         # Update team points
         state = state.replace(
             team_points=state.team_points + team_scores
         )
-        reward = dict()
-        for k in range(params.num_teams):
-            reward[f"player_{k}"] = team_scores[k]
-        terminated = self.is_terminal(state, params)
 
-        # if match ended, then remove all units
+        # if match ended, then remove all units, update team wins, reset team points
+        winner_by_points = jnp.where(state.team_points.max() > state.team_points.min(), jnp.argmax(state.team_points), -1)
+        winner_by_energy = jnp.sum(state.units.energy[..., 0] * state.units_mask, axis=1)
+
+        winner = winner_by_points
         match_ended = state.match_steps >= params.max_steps_in_match
-        state = state.replace(units_mask=jnp.where(match_ended, jnp.zeros_like(state.units_mask), state.units_mask), match_steps=jnp.where(match_ended, 0, state.match_steps))
-
+        
+        state = state.replace(match_steps=jnp.where(match_ended, -1, state.match_steps), team_points=jnp.where(match_ended, jnp.zeros_like(state.team_points), state.team_points), team_wins=jnp.where(match_ended, state.team_wins.at[winner].add(1), state.team_wins))
+        
         # spawn units in
         spawn_units_in = (state.match_steps % params.spawn_rate == 0)
         # TODO (stao): only logic in code that probably doesn't not handle more than 2 teams, everything else is vmapped across teams
@@ -299,7 +290,11 @@ class LuxAIS3Env(environment.Environment):
 
         # Update state's step count
         state = state.replace(steps=state.steps + 1, match_steps=state.match_steps + 1)
-        truncated = state.steps >= params.max_steps_in_match * params.match_count_per_episode
+        truncated = state.steps >= (params.max_steps_in_match + 1) * params.match_count_per_episode
+        reward = dict()
+        for k in range(params.num_teams):
+            reward[f"player_{k}"] = state.team_wins[k]
+        terminated = self.is_terminal(state, params)
         return (
             lax.stop_gradient(self.get_obs(state, params, key=key)),
             lax.stop_gradient(state),
@@ -376,9 +371,6 @@ class LuxAIS3Env(environment.Environment):
     # @functools.partial(jax.jit, static_argnums=(0, 2))
     def get_obs(self, state: EnvState, params=None, key=None) -> EnvObs:
         """Return observation from raw state, handling partial observability."""
-        # determine correct unit mask for units that are visible
-        # unit_mask = jnp.logical_and(state.units_mask, jax.vmap(lambda t: state.sensor_mask[t, state.units.position[t, u, 0], state.units.position[t, u, 1]])(jnp.arange(state.units.position.shape[0]))) for u in range(state.units.position.shape[1]))
-        
         obs = dict()
         
         def update_unit_mask(unit_position, unit_mask, sensor_mask):
@@ -395,12 +387,10 @@ class LuxAIS3Env(environment.Environment):
             new_unit_masks = state.units_mask.at[other_team_ids].set(new_unit_masks)
             
             new_relic_nodes_mask = update_relic_nodes_mask(state.relic_nodes_mask, state.relic_nodes, state.sensor_mask[t])
-            # new_relic_nodes_mask = state.relic_nodes_mask.set(new_relic_nodes_mask)
-            
             team_obs = EnvObs(
                 units=UnitState(
                     position=jnp.where(new_unit_masks[..., None], state.units.position, -1),
-                    energy=jnp.where(new_unit_masks[..., None], state.units.energy, -1),
+                    energy=jnp.where(new_unit_masks[..., None], state.units.energy, -1)[..., 0],
                 ),
                 units_mask=new_unit_masks,
                 sensor_mask=state.sensor_mask[t],
@@ -409,11 +399,11 @@ class LuxAIS3Env(environment.Environment):
                     tile_type=jnp.where(state.sensor_mask[t], state.map_features.tile_type, -1),
                 ),
                 team_points=state.team_points,
+                team_wins=state.team_wins,
                 steps=state.steps,
                 match_steps=state.match_steps,
                 relic_nodes=jnp.where(new_relic_nodes_mask[..., None], state.relic_nodes, -1),
                 relic_nodes_mask=new_relic_nodes_mask,
-                relic_nodes_map_weights=state.relic_nodes_map_weights
             )
             obs[f"player_{t}"] = team_obs
         return obs

@@ -69,31 +69,14 @@ export interface Board {
   tileType: number[][];
   relicNodes: number[][];
   relicNodeConfigs: number[][][];
-  // ice: number[][];
-  // lichen: number[][];
-  // strains: number[][];
 }
 
 export interface Unit {
   unitId: string;
-
   tile: Tile;
-
-  // power: number;
-  // cargo: Cargo;
 }
 
-// export interface Factory extends Unit {
-//   strain: number;
-//   action: FactoryAction | null;
-
-//   lichen: number;
-// }
-
 export interface Robot extends Unit {
-  // type: RobotType;
-  // actionQueue: RobotAction[];
-  // position: number[];
   action: RobotAction | null;
   prevAction: RobotAction | null;
   energy: number;
@@ -102,23 +85,9 @@ export interface Robot extends Unit {
 export interface Team {
   name: string;
   points: number;
-  // faction: Faction;
-
-  // water: number;
-  // metal: number;
-
-  // factories: Factory[];
+  wins: number;
   robots: Robot[];
-
-  // strains: Set<number>;
-
-  // placeFirst: boolean;
-  // factoriesToPlace: number;
-
-  // action: SetupAction | null;
-
   sensorMask: boolean[][];
-
   error: string | null;
 }
 

@@ -80,6 +80,8 @@ class EnvState:
 
     team_points: chex.Array
     """Team points in the environment with shape (T) for T teams"""
+    team_wins: chex.Array
+    """Team wins in the environment with shape (T) for T teams"""
 
     steps: int = 0
     """steps taken in the environment"""
@@ -106,9 +108,10 @@ class EnvObs:
     """Position of all relic nodes with shape (N, 2) for N max relic nodes and 2 features for position (x, y). Number is -1 if not visible"""
     relic_nodes_mask: chex.Array
     """Mask of all relic nodes with shape (N) for N max relic nodes"""
-    relic_nodes_map_weights: chex.Array
     team_points: chex.Array
     """Team points in the environment with shape (T) for T teams"""
+    team_wins: chex.Array
+    """Team wins in the environment with shape (T) for T teams"""
     steps: int = 0
     """steps taken in the environment"""
     match_steps: int = 0
@@ -216,6 +219,7 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
             shape=(params.num_teams, params.max_units), dtype=jnp.bool
         ),
         team_points=jnp.zeros(shape=(params.num_teams), dtype=jnp.int32),
+        team_wins=jnp.zeros(shape=(params.num_teams), dtype=jnp.int32),
         energy_nodes=generated["energy_nodes"],
         energy_node_fns=generated["energy_node_fns"],
         energy_nodes_mask=generated["energy_nodes_mask"],

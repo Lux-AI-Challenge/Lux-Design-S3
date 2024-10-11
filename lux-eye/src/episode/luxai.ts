@@ -262,6 +262,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       teams.push({
         name: metadata.teamNames[j],
         points: obs.team_points[j],
+        wins: obs.team_wins[j],
         error: error,
         //   name: metadata.teamNames[j],
         //   faction: rawTeam.faction,
