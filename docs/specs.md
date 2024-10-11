@@ -92,6 +92,8 @@ To win the game, the team must have won the most matches out of the 5 match sequ
 
 To win a match, the team must have gained more relic points than the other team at the end of the match. If the relic points scores are tied, then the match winner is decided by who has more total unit energy. If that is also tied then the winner is chosen at random.
 
+### Collisions 
+TODO (stao): add collision rules and to the game engine
 
 ## Match Resolution Order
 
