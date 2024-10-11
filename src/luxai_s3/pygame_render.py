@@ -1,7 +1,10 @@
 from luxai_s3.params import EnvParams
 from luxai_s3.state import ASTEROID_TILE, NEBULA_TILE, EnvState
 import numpy as np
-import pygame
+try:
+    import pygame
+except:
+    pass
 
 TILE_SIZE = 64
 
@@ -26,9 +29,10 @@ class LuxAIPygameRenderer:
 
             self.display_options = {
                 "show_grid": True,
-                "show_relic_spots": True,
+                "show_relic_spots": False,
                 "show_sensor_mask": True,
-                "show_energy_field": True,
+                "show_vision_power_map": True,
+                "show_energy_field": False,
             }
 
         # Handle events to keep the window responsive
@@ -147,7 +151,7 @@ class LuxAIPygameRenderer:
             for team in range(params.num_teams):
                 for x in range(params.map_width):
                     for y in range(params.map_height):
-                        if state.sensor_mask[team, y, x]:
+                        if state.sensor_mask[team, x, y]:
                             draw_rect_alpha(
                                 self.surface,
                                 (255, 0, 0, 25),
@@ -160,7 +164,7 @@ class LuxAIPygameRenderer:
             font = pygame.font.Font(None, 32)  # You may need to adjust the font size
             for x in range(params.map_width):
                 for y in range(params.map_height):
-                    energy_field_value = state.energy_field[y, x]
+                    energy_field_value = state.map_features.energy[x, y]
                     text = font.render(str(energy_field_value), True, (255, 255, 255))
                     text_rect = text.get_rect(
                         center=((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
@@ -178,8 +182,20 @@ class LuxAIPygameRenderer:
                             (255, 0, 0, 255 * energy_field_value / params.min_energy_per_tile),
                             pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
                         )
-
-        # Draw units
+        # if self.display_options["show_vision_power_map"]:
+        #     print(state.vision_power_map.shape)
+        #     font = pygame.font.Font(None, 32)  # You may need to adjust the font size
+        #     # vision_power_map = vision_power_map - (state.map_features.tile_type == NEBULA_TILE)[..., 0] * params.nebula_tile_vision_reduction
+        #     for team in range(0, 1):
+        #         for x in range(params.map_width):
+        #             for y in range(params.map_height):
+        #                 vision_power_value = state.vision_power_map[team, x, y]
+        #                 vision_power_value -= state.map_features.tile_type[x, y] == NEBULA_TILE
+        #                 text = font.render(str(vision_power_value), True, (0, 255, 255))
+        #                 text_rect = text.get_rect(
+        #                     center=((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
+        #                 )
+        #                 self.surface.blit(text, text_rect)
 
         # Draw units
         for team in range(2):

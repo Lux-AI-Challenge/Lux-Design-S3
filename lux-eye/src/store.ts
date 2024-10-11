@@ -2,8 +2,9 @@ import axios from 'axios';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { isKaggleEnvironmentsEpisode, parseKaggleEnvironmentsEpisode } from './episode/kaggle-environments';
-import { isLuxAIS2Episode, parseLuxAIS2Episode } from './episode/luxai-s2';
+import { isLuxAISEpisode, parseLuxAISEpisode } from './episode/luxai';
 import { Episode, Tile } from './episode/model';
+import { DisplayConfig } from './pages/visualizer/Board';
 
 const PRODUCTION_BASE_URL = 'https://s2vis.lux-ai.org';
 
@@ -22,6 +23,8 @@ export interface State {
 
   minimalTheme: boolean;
 
+  displayConfig: DisplayConfig;
+
   setTurn: (turn: number) => void;
   increaseTurn: () => boolean;
   setSpeed: (speed: number) => void;
@@ -34,6 +37,7 @@ export interface State {
   openInNewTab: () => void;
 
   setTheme: (minimal: boolean) => void;
+  setDisplayConfig: (displayConfig: DisplayConfig) => void;
 }
 
 export const useStore = create(
@@ -51,7 +55,11 @@ export const useStore = create(
 
       loading: false,
       progress: 0,
-
+      displayConfig: {
+        sensorMask: true,
+        energyField: false,
+        relicConfigs: true,
+      },
       minimalTheme: true,
 
       setTurn: turn => {
@@ -109,8 +117,8 @@ export const useStore = create(
         }
 
         let episode: Episode | null = null;
-        if (isLuxAIS2Episode(data)) {
-          episode = parseLuxAIS2Episode(data);
+        if (isLuxAISEpisode(data)) {
+          episode = parseLuxAISEpisode(data);
         } else if (isKaggleEnvironmentsEpisode(data)) {
           episode = parseKaggleEnvironmentsEpisode(data);
         } else {
@@ -227,6 +235,9 @@ export const useStore = create(
         if (get().minimalTheme !== minimal) {
           set({ minimalTheme: minimal });
         }
+      },
+      setDisplayConfig: (displayConfig: DisplayConfig) => {
+        set({ displayConfig });
       },
     }),
     {

@@ -1,6 +1,6 @@
 import { useHover, useMergedRef, useMouse } from '@mantine/hooks';
 import { useCallback, useEffect, useState } from 'react';
-import { Factory, Robot, RobotType, Step, Tile } from '../../episode/model';
+import { EnvParams, Robot, Step, Tile } from '../../episode/model';
 import { useStore } from '../../store';
 import { getTeamColor } from '../../utils/colors';
 
@@ -10,16 +10,20 @@ interface SizeConfig {
   boardSize: number;
   tilesPerSide: number;
 }
-
+export interface DisplayConfig {
+  energyField: boolean;
+  sensorMask: boolean;
+  relicConfigs: boolean;
+}
 interface ThemeConfig {
   minimalTheme: boolean;
 }
 
-type Config = SizeConfig & ThemeConfig;
+type Config = SizeConfig & ThemeConfig & DisplayConfig;
 
 function getSizeConfig(maxWidth: number, step: Step): SizeConfig {
   const gutterSize = 1;
-  const tilesPerSide = step.board.rubble.length;
+  const tilesPerSide = step.board.energy.length;
 
   let tileSize = Math.floor(Math.sqrt(maxWidth));
   let boardSize = tileSize * tilesPerSide + gutterSize * (tilesPerSide + 1);
@@ -44,21 +48,13 @@ function tileToCanvas(sizes: SizeConfig, tile: Tile): [number, number] {
   ];
 }
 
-function scale(value: number, relativeMin: number, relativeMax: number): number {
-  const clampedValue = Math.max(Math.min(value, relativeMax), relativeMin);
-  return (clampedValue - relativeMin) / (relativeMax - relativeMin);
-}
+// function scale(value: number, relativeMin: number, relativeMax: number): number {
+//   const clampedValue = Math.max(Math.min(value, relativeMax), relativeMin);
+//   return (clampedValue - relativeMin) / (relativeMax - relativeMin);
+// }
 
-function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step: Step): void {
+function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step: Step, envParams: EnvParams): void {
   const board = step.board;
-  const isDay = step.step < 0 || step.step % 50 < 30;
-
-  const teamStrains = new Map<number, number>();
-  for (let i = 0; i < 2; i++) {
-    for (const strain of step.teams[i].strains) {
-      teamStrains.set(strain, i);
-    }
-  }
 
   for (let tileY = 0; tileY < config.tilesPerSide; tileY++) {
     for (let tileX = 0; tileX < config.tilesPerSide; tileX++) {
@@ -68,62 +64,80 @@ function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step
       ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
 
       let color: string;
-      if (board.ice[tileY][tileX] > 0) {
-        color = '#48dbfb';
-      } else if (board.ore[tileY][tileX] > 0) {
+      if (board.tileType[tileX][tileY] == 1) {
+        color = '#5B5F97';
+      } else if (board.tileType[tileX][tileY] == 2) {
         color = '#2c3e50';
       } else {
-        const rgb = isDay ? 150 : 75;
-        const base = isDay ? 0.1 : 0.2;
-        color = `rgba(${rgb}, ${rgb}, ${rgb}, ${base + scale(board.rubble[tileY][tileX], 0, 100) * (1 - base)})`;
+        const rgb = 230;
+        // const base = isDay ? 0.1 : 0.2;
+        color = `rgba(${rgb}, ${rgb}, ${rgb}, 1)`;
       }
 
       ctx.fillStyle = color;
       ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
 
-      const lichen = board.lichen[tileY][tileX];
-      if (lichen > 0) {
-        const team = teamStrains.get(board.strains[tileY][tileX])!;
-        ctx.fillStyle = getTeamColor(team, 0.1 + scale(lichen, 0, 100) * 0.4);
-        ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+      if (config.sensorMask) {
+        for (const team of step.teams) {
+          if (team.sensorMask[tileX][tileY]) {
+            ctx.fillStyle = `rgba(255, 0, 0, 0.1)`;
+            ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+          }
+        }
+      }
+      if (config.energyField) {
+        const energy = board.energy[tileX][tileY];
+        if (energy > 0) {
+          ctx.fillStyle = `rgba(0, 255, 0, ${energy / 50})`;
+          ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+        } else {
+          ctx.fillStyle = `rgba(255, 0, 0, ${-energy / 50})`;
+          ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+        }
       }
     }
   }
 
-  ctx.restore();
-}
+  // for (let i = 0; i < board.energyNodes.length; i++) {
+  //   const [canvasX, canvasY] = tileToCanvas(config, { x: board.energyNodes[i][0], y: board.energyNodes[i][1] });
+  //   ctx.fillStyle = 'green';
+  //   ctx.fillRect(canvasX, canvasY, config.tileSize / 2, config.tileSize / 2);
+  // }
 
-function drawFactory(
-  ctx: CanvasRenderingContext2D,
-  config: Config,
-  factory: Factory,
-  team: number,
-  selectedTile: Tile | null,
-): void {
-  const [canvasX, canvasY] = tileToCanvas(config, {
-    x: factory.tile.x - 1,
-    y: factory.tile.y - 1,
-  });
+  for (let i = 0; i < board.relicNodes.length; i++) {
+    const [canvasX, canvasY] = tileToCanvas(config, { x: board.relicNodes[i][0], y: board.relicNodes[i][1] });
 
-  const size = config.tileSize * 3 + config.gutterSize * 2;
-  const isSelected =
-    selectedTile !== null &&
-    Math.abs(factory.tile.x - selectedTile.x) <= 1 &&
-    Math.abs(factory.tile.y - selectedTile.y) <= 1;
-
-  const borderSize = 2;
-
-  ctx.fillStyle = 'white';
-  ctx.fillRect(canvasX, canvasY, size, size);
-
-  ctx.fillStyle = getTeamColor(team, 0.75);
-  ctx.fillRect(canvasX, canvasY, size, size);
-
-  ctx.fillStyle = isSelected ? 'black' : getTeamColor(team, 1.0);
-  ctx.fillRect(canvasX, canvasY, size, borderSize);
-  ctx.fillRect(canvasX, canvasY, borderSize, size);
-  ctx.fillRect(canvasX, canvasY + size - borderSize, size, borderSize);
-  ctx.fillRect(canvasX + size - borderSize, canvasY, borderSize, size);
+    ctx.fillStyle = 'orange';
+    ctx.fillRect(canvasX + config.tileSize / 4, canvasY + config.tileSize / 4, config.tileSize / 2, config.tileSize / 2);
+    if (config.relicConfigs) {
+      for (
+        let dx = -Math.floor(envParams.relic_config_size / 2);
+        dx < Math.ceil(envParams.relic_config_size / 2);
+        dx++
+      ) {
+        for (
+          let dy = -Math.floor(envParams.relic_config_size / 2);
+          dy < Math.ceil(envParams.relic_config_size / 2);
+          dy++
+        ) {
+          const nx = board.relicNodes[i][0] + dx;
+          const ny = board.relicNodes[i][1] + dy;
+          if (nx < 0 || nx >= config.tilesPerSide || ny < 0 || ny >= config.tilesPerSide) {
+            continue;
+          }
+          if (
+            board.relicNodeConfigs[i][dx + Math.floor(envParams.relic_config_size / 2)][
+              dy + Math.floor(envParams.relic_config_size / 2)
+            ] != 0
+          ) {
+            const [canvasX, canvasY] = tileToCanvas(config, { x: nx, y: ny });
+            ctx.fillStyle = 'rgba(100, 100, 0, 0.1)';
+            ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+          }
+        }
+      }
+    }
+  }
 
   ctx.restore();
 }
@@ -139,33 +153,29 @@ function drawRobot(
 
   const isSelected = selectedTile !== null && robot.tile.x === selectedTile.x && robot.tile.y === selectedTile.y;
 
-  if (robot.type === RobotType.Light) {
-    ctx.fillStyle = getTeamColor(team, 1.0);
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = isSelected ? 2 : 1;
+  ctx.fillStyle = getTeamColor(team, 1.0);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = isSelected ? 2 : 1;
 
-    const radius = config.tileSize / 2 - 1;
+  const radius = config.tileSize / 2 - 3;
 
-    ctx.beginPath();
-    ctx.arc(canvasX + config.tileSize / 2, canvasY + config.tileSize / 2, radius, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
-  } else {
-    const borderSize = isSelected ? 1 : 2;
-
-    ctx.fillStyle = 'black';
-    ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
-
-    ctx.fillStyle = getTeamColor(team, 1.0);
-    ctx.fillRect(
-      canvasX + borderSize,
-      canvasY + borderSize,
-      config.tileSize - borderSize * 2,
-      config.tileSize - borderSize * 2,
-    );
-  }
-
+  ctx.beginPath();
+  ctx.arc(canvasX + config.tileSize / 2, canvasY + config.tileSize / 2, radius, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
   ctx.restore();
+
+  if (robot.prevAction && robot.prevAction.type === 'sap' && robot.prevAction.validSap) {
+    const [canvasX, canvasY] = tileToCanvas(config, robot.tile);
+    const [targetCanvasX, targetCanvasY] = tileToCanvas(config, robot.prevAction.target);
+
+    ctx.strokeStyle = getTeamColor(team, 0.5); // Semi opaque line
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(canvasX + config.tileSize / 2, canvasY + config.tileSize / 2);
+    ctx.lineTo(targetCanvasX + config.tileSize / 2, targetCanvasY + config.tileSize / 2);
+    ctx.stroke();
+  }
 }
 
 function drawSelectedTile(ctx: CanvasRenderingContext2D, config: Config, selectedTile: Tile): void {
@@ -204,20 +214,22 @@ function drawSelectedTile(ctx: CanvasRenderingContext2D, config: Config, selecte
   ctx.restore();
 }
 
-function drawBoard(ctx: CanvasRenderingContext2D, config: Config, step: Step, selectedTile: Tile | null): void {
+function drawBoard(
+  ctx: CanvasRenderingContext2D,
+  config: Config,
+  step: Step,
+  envParams: EnvParams,
+  selectedTile: Tile | null,
+): void {
   ctx.save();
 
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, config.boardSize, config.boardSize);
   ctx.restore();
 
-  drawTileBackgrounds(ctx, config, step);
+  drawTileBackgrounds(ctx, config, step, envParams);
 
   for (let i = 0; i < 2; i++) {
-    for (const factory of step.teams[i].factories) {
-      drawFactory(ctx, config, factory, i, selectedTile);
-    }
-
     for (const robot of step.teams[i].robots) {
       drawRobot(ctx, config, robot, i, selectedTile);
     }
@@ -239,7 +251,7 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
 
   const episode = useStore(state => state.episode);
   const turn = useStore(state => state.turn);
-
+  const displayConfig = useStore(state => state.displayConfig);
   const selectedTile = useStore(state => state.selectedTile);
   const setSelectedTile = useStore(state => state.setSelectedTile);
 
@@ -253,6 +265,7 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
   });
 
   const step = episode!.steps[turn];
+  const envParams = episode!.params;
 
   const onMouseLeave = useCallback(() => {
     setSelectedTile(null, true);
@@ -303,10 +316,11 @@ export function Board({ maxWidth }: BoardProps): JSX.Element {
     const config = {
       ...sizeConfig,
       minimalTheme,
+      ...displayConfig,
     };
 
-    drawBoard(ctx, config, step, selectedTile);
-  }, [step, sizeConfig, selectedTile, minimalTheme]);
+    drawBoard(ctx, config, step, envParams, selectedTile);
+  }, [step, envParams, sizeConfig, selectedTile, minimalTheme, displayConfig]);
 
   return (
     <canvas ref={canvasRef} width={sizeConfig.boardSize} height={sizeConfig.boardSize} onMouseLeave={onMouseLeave} />

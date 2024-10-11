@@ -5,6 +5,7 @@ import {
   IconArrowUpRight,
   IconChevronsLeft,
   IconChevronsRight,
+  IconInfoCircle,
   IconKeyboard,
   IconPlayerPause,
   IconPlayerPlay,
@@ -12,6 +13,7 @@ import {
   IconPlayerTrackPrev,
 } from '@tabler/icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getMatchIdx, parseTileType } from '../../episode/luxai';
 import { useStore } from '../../store';
 
 const SPEEDS = [0.5, 1, 2, 4, 8, 16, 32];
@@ -35,6 +37,9 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
   const openInNewTab = useStore(state => state.openInNewTab);
 
+  const displayConfig = useStore(state => state.displayConfig);
+  const setDisplayConfig = useStore(state => state.setDisplayConfig);
+
   /* const minimalTheme = useStore(state => state.minimalTheme);
   const setTheme = useStore(state => state.setTheme); */
 
@@ -51,8 +56,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
     const gradientParts: [string, number, number][] = [];
 
     for (const step of episode.steps) {
-      const isDay = step.step < 0 || step.step % 50 < 30;
-
+      const isDay = getMatchIdx(step.step, episode.params) % 2 === 0;
       const color = isDay ? '#e9ecef' : '#bdc3c7';
 
       if (gradientParts.length === 0) {
@@ -109,6 +113,27 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
     setPlaying(!playing);
   }, [episode, turn, playing]);
+
+  const toggleEnergyFieldDisplay = useCallback(() => {
+    setDisplayConfig({
+      ...displayConfig,
+      energyField: !displayConfig.energyField,
+    });
+  }, [displayConfig]);
+
+  const toggleRelicConfigDisplay = useCallback(() => {
+    setDisplayConfig({
+      ...displayConfig,
+      relicConfigs: !displayConfig.relicConfigs,
+    });
+  }, [displayConfig]);
+
+  const toggleSensorMaskDisplay = useCallback(() => {
+    setDisplayConfig({
+      ...displayConfig,
+      sensorMask: !displayConfig.sensorMask,
+    });
+  }, [displayConfig]);
 
   const previousTurn = useCallback(() => {
     if (turn > 0 && !sliderRef.current?.contains(document.activeElement)) {
@@ -188,6 +213,12 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
               </td>
               <td>Decrease speed</td>
             </tr>
+            <tr>
+              <td>
+                <Kbd>e</Kbd>
+              </td>
+              <td>Toggle Energy Field Display</td>
+            </tr>
             {SPEEDS.map((speed, i) => (
               <tr key={i}>
                 <td>
@@ -201,6 +232,15 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
       ),
     });
   }, []);
+
+  const openJsonDataModal = useCallback(() => {
+    modals.openModal({
+      title: 'This Game\'s Parameters',
+      children: (
+        <pre>{JSON.stringify(episode.params, null, 2)}</pre>
+      ),
+    });
+  }, [episode]);
 
   useEffect(() => {
     if (!playing) {
@@ -222,6 +262,9 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
     ['ArrowRight', nextTurn],
     ['ArrowUp', increaseSpeed],
     ['ArrowDown', decreaseSpeed],
+    ['e', toggleEnergyFieldDisplay],
+    ['r', toggleRelicConfigDisplay],
+    ['s', toggleSensorMaskDisplay],
   ];
 
   for (let i = 1; i <= SPEEDS.length; i++) {
@@ -231,8 +274,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
   useHotkeys(hotkeys);
 
   const step = episode.steps[turn];
-  const isDay = step.step < 0 || step.step % 50 < 30;
-
+  const matchIdx = getMatchIdx(step.step, episode.params);
   return (
     <Stack spacing="xs">
       <Slider
@@ -276,6 +318,9 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
             <IconArrowUpRight />
           </ActionIcon>
         )}
+        <ActionIcon color="blue" variant="transparent" title="Show JSON data" onClick={openJsonDataModal}>
+          <IconInfoCircle />
+        </ActionIcon>
 
         <div style={{ marginRight: 'auto' }} />
 
@@ -286,7 +331,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
       </Group>
 
       <Group position="apart">
-        <Text>{isDay ? 'Day' : 'Night'}</Text>
+        <Text>{`Match ${matchIdx + 1} / ${episode.params.match_count_per_episode}`}</Text>
         {episode.metadata.seed && <Text>Seed: {episode.metadata.seed}</Text>}
         {selectedTile !== null && (
           <Text>
@@ -297,11 +342,15 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
       {selectedTile !== null && (
         <Group position="apart">
-          <Text>Rubble: {step.board.rubble[selectedTile.y][selectedTile.x]}</Text>
-          <Text>Strain: {step.board.strains[selectedTile.y][selectedTile.x]}</Text>
-          <Text>Lichen: {step.board.lichen[selectedTile.y][selectedTile.x]}</Text>
-          <Text>Ice: {step.board.ice[selectedTile.y][selectedTile.x] > 0 ? 'Yes' : 'No'}</Text>
-          <Text>Ore: {step.board.ore[selectedTile.y][selectedTile.x] > 0 ? 'Yes' : 'No'}</Text>
+          <Text>Tile Type: {parseTileType(step.board.tileType[selectedTile.x][selectedTile.y])} {step.board.energyNodes.find((val) => {
+            return val[0] == selectedTile.x && val[1] == selectedTile.y
+          }) && "(Energy Node)"} {step.board.relicNodes.find((val) => {
+            return val[0] == selectedTile.x && val[1] == selectedTile.y
+          }) && "(Relic Node)"}</Text>
+          
+          
+          <Text>Energy: {step.board.energy[selectedTile.x][selectedTile.y]}</Text>
+          <Text>Vision Power: {step.board.visionPowerMap[0][selectedTile.x][selectedTile.y]}, {step.board.visionPowerMap[1][selectedTile.x][selectedTile.y]}</Text>
         </Group>
       )}
 
