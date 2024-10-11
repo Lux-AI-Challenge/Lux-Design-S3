@@ -64,7 +64,7 @@ class EnvState:
     relic_node_configs: chex.Array
     """Relic node configs in the environment with shape (N, K, K) for N max relic nodes and a KxK relic configuration"""
     relic_nodes_mask: chex.Array
-    """Mask of relic nodes in the environment with shape (T, N) for T teams, N max relic nodes"""
+    """Mask of relic nodes in the environment with shape (N, ) for N max relic nodes"""
     relic_nodes_map_weights: chex.Array
     """Map of relic nodes in the environment with shape (H, W) for H height, W width. True if a relic node is present, False otherwise. This is generated from other state"""
 
@@ -106,13 +106,14 @@ class EnvObs:
     """Position of all relic nodes with shape (N, 2) for N max relic nodes and 2 features for position (x, y). Number is -1 if not visible"""
     relic_nodes_mask: chex.Array
     """Mask of all relic nodes with shape (N) for N max relic nodes"""
-    
+    relic_nodes_map_weights: chex.Array
     team_points: chex.Array
     """Team points in the environment with shape (T) for T teams"""
     steps: int = 0
     """steps taken in the environment"""
     match_steps: int = 0
     """steps taken in the current match"""
+    
     
 
 def serialize_env_states(env_states: list[EnvState]):
@@ -194,7 +195,7 @@ def gen_state(key: chex.PRNGKey, params: EnvParams) -> EnvState:
                 )
                 relic_nodes_map_weights = jnp.where(
                     valid_pos & mask,
-                    relic_nodes_map_weights.at[x, y].add(relic_node_config[dy, dx]),
+                    relic_nodes_map_weights.at[x, y].add(relic_node_config[dx, dy]),
                     relic_nodes_map_weights,
                 )
         return relic_nodes_map_weights, None

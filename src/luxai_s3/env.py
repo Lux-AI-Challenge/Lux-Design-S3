@@ -405,6 +405,7 @@ class LuxAIS3Env(environment.Environment):
                 match_steps=state.match_steps,
                 relic_nodes=jnp.where(new_relic_nodes_mask[..., None], state.relic_nodes, -1),
                 relic_nodes_mask=new_relic_nodes_mask,
+                relic_nodes_map_weights=state.relic_nodes_map_weights
             )
             obs[f"player_{t}"] = team_obs
         return obs
