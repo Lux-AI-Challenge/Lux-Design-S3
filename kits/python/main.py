@@ -19,32 +19,14 @@ def agent_fn(observation, configurations):
     step = observation.step
     player = observation.player
     remainingOverageTime = observation.remainingOverageTime
-    if step == 1:
+    if step == 0:
+        agent_dict[player] = Agent(player, configurations["env_cfg"])
+    if step < 3 and player == "player_1":
         with open(f"inputs_{step}.txt", "w") as f:
             f.write(str(observation.__dict__))
-        agent_dict[player] = Agent(player, configurations["env_cfg"])
     agent = agent_dict[player]
-    actions = agent.act(step - 1, from_json(observation.obs), remainingOverageTime)
+    actions = agent.act(step , from_json(observation.obs), remainingOverageTime)
     return dict(action=actions.tolist())
-    
-    
-    
-    # if step == 0:
-    #     env_cfg = EnvConfig.from_dict(configurations["env_cfg"])
-    #     agent_dict[player] = Agent(player, env_cfg)
-    #     agent_prev_obs[player] = dict()
-    #     agent = agent_dict[player]
-    # agent = agent_dict[player]
-    # obs = process_obs(player, agent_prev_obs[player], step, json.loads(observation.obs))
-    # agent_prev_obs[player] = obs
-    # agent.step = step
-    # if obs["real_env_steps"] < 0:
-    #     actions = agent.early_setup(step, obs, remainingOverageTime)
-    # else:
-    #     actions = agent.act(step, obs, remainingOverageTime)
-
-    # return process_action(actions)
-
 if __name__ == "__main__":
     
     def read_input():
@@ -66,9 +48,6 @@ if __name__ == "__main__":
         if i == 0:
             env_cfg = raw_input["info"]["env_cfg"]
             player_id = raw_input["player"]
-        if i == 35 and player_id == "player_0":
-            with open(f"inputs_{i}.txt", "w") as f:
-                f.write(inputs)
         i += 1
         actions = agent_fn(observation, dict(env_cfg=env_cfg))
         # send actions to engine

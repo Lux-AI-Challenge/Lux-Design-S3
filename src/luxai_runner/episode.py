@@ -139,7 +139,6 @@ window.episode = {json.dumps(replay)};
 
         i = 0
         while not game_done:
-            i += 1
             actions = dict()
 
             agent_ids = []
@@ -164,6 +163,7 @@ window.episode = {json.dumps(replay)};
                             print(f"{agent_id} sent a invalid action {action}")
                     actions[agent_id] = None
             new_state_obs, rewards, terminations, truncations, infos = self.env.step(actions)
+            i += 1
             # TODO (stao): hard code to avoid using jax structs in the infos and sending those.
             infos = dict(player_0=dict(), player_1=dict())
             dones = dict()

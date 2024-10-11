@@ -1,7 +1,4 @@
-from dataclasses import dataclass, field
 import numpy as np
-def process_action(action):
-    return to_json(action)
 def to_json(obj):
     if isinstance(obj, np.ndarray):
         return obj.tolist()
