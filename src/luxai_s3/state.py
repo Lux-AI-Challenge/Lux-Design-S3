@@ -121,7 +121,7 @@ class EnvObs:
 
 def serialize_env_states(env_states: list[EnvState]):
     def serialize_array(root: EnvState, arr, key_path: str = ""):
-        if key_path in ["vision_power_map", "relic_nodes_mask", "energy_nodes_mask", "energy_node_fns", "relic_nodes_map_weights"]:
+        if key_path in ["sensor_mask", "relic_nodes_mask", "energy_nodes_mask", "energy_node_fns", "relic_nodes_map_weights"]:
             return None
         if key_path == "relic_nodes":
             return root.relic_nodes[root.relic_nodes_mask].tolist()

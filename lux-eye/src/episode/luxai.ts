@@ -110,116 +110,14 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       tileType: obs.map_features.tile_type,
       relicNodes: obs.relic_nodes,
       relicNodeConfigs: obs.relic_node_configs,
-      // ice: transpose(obs.map_features.ice),
-      // lichen: transpose(obs.board.lichen),
-      // strains: transpose(obs.board.lichen_strains),
+      visionPowerMap: obs.vision_power_map,
     };
-    // if (i === 0) {
-    //   board = {
-    //     energy: transpose(obs.map_features.energy),
-    //     tile_type: transpose(obs.map_features.tile_type),
-    //     // ice: transpose(obs.map_features.ice),
-    //     // lichen: transpose(obs.board.lichen),
-    //     // strains: transpose(obs.board.lichen_strains),
-    //   };
-    // } else if (Array.isArray(obs.board.rubble)) {
-    //   board = {
-    //     rubble: transpose(obs.board.rubble),
-    //     ore: JSON.parse(JSON.stringify(steps[i - 1].board.ore)),
-    //     ice: JSON.parse(JSON.stringify(steps[i - 1].board.ice)),
-    //     lichen: transpose(obs.board.lichen),
-    //     strains: transpose(obs.board.lichen_strains),
-    //   };
-    // } else {
-    //   board = JSON.parse(JSON.stringify(steps[i - 1].board));
-
-    //   for (const [item, grid] of <[string, number[][]][]>[
-    //     ['rubble', board.rubble],
-    //     ['lichen', board.lichen],
-    //     ['lichen_strains', board.strains],
-    //   ]) {
-    //     for (const key in obs.board[item]) {
-    //       const [x, y] = key.split(',').map(part => parseInt(part));
-    //       grid[y][x] = obs.board[item][key];
-    //     }
-    //   }
-    // }
 
     const teams: Team[] = [];
     for (let j = 0; j < 2; j++) {
-      // const playerId = `player_${j}`;
       const error: string | null = null;
-
-      // if (obs.teams[playerId] === undefined) {
-      //   const rawPlayer =
-      //     data.observations[1].teams[playerId] !== undefined ? data.observations[1].teams[playerId] : null;
-
-      //   teams.push({
-      //     name: metadata.teamNames[j],
-      //     faction: rawPlayer !== null ? rawPlayer.faction : Faction.None,
-
-      //     water: 0,
-      //     metal: 0,
-
-      //     factories: [],
-      //     robots: [],
-
-      //     strains: new Set(),
-
-      //     placeFirst: rawPlayer !== null ? rawPlayer.place_first : false,
-      //     factoriesToPlace: rawPlayer !== null ? rawPlayer.factories_to_place : 0,
-
-      //     action: actions[playerId] !== null ? parseSetupAction(actions[playerId]) : null,
-
-      //     error,
-      //   });
-
-      //   continue;
-      // }
-
-      // const factories: Factory[] = [];
-      // for (const unitId of Object.keys(obs.factories[playerId])) {
-      //   const rawFactory = obs.factories[playerId][unitId];
-
-      //   let lichen = 0;
-      //   for (let y = 0; y < board.lichen.length; y++) {
-      //     for (let x = 0; x < board.lichen.length; x++) {
-      //       if (board.strains[y][x] === rawFactory.strain_id) {
-      //         lichen += board.lichen[y][x];
-      //       }
-      //     }
-      //   }
-
-      //   if (actions[playerId] === null) {
-      //     error = 'Actions object is null';
-      //   }
-
-      //   factories.push({
-      //     unitId,
-
-      //     tile: {
-      //       x: rawFactory.pos[0],
-      //       y: rawFactory.pos[1],
-      //     },
-
-      //     power: rawFactory.power,
-      //     cargo: rawFactory.cargo,
-
-      //     strain: rawFactory.strain_id,
-      //     action:
-      //       actions[playerId] !== null && actions[playerId][unitId] !== undefined
-      //         ? parseFactoryAction(actions[playerId][unitId])
-      //         : null,
-
-      //     lichen,
-      //   });
-      // }
-      // console.log(obs);
-      //sensorMask
-      const sensorMask = obs.sensor_mask[j];
+      const sensorMask = obs.vision_power_map[j].map((map: number[]) => map.map((value: number) => value > 0));
       const robots: Robot[] = [];
-      // TODO: might not use a mask in the future.
-      // console.log(obs.units_mask);
       for (let unitIdx = 0; unitIdx < obs.units_mask[j].length; unitIdx++) {
         if (obs.units_mask[j][unitIdx]) {
           const robotPosition = {
@@ -236,52 +134,14 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
           });
         }
       }
-      // for (const unitId of Object.keys(obs.units[playerId])) {
-      //   const rawRobot = obs.units[playerId][unitId];
-      //   // const actionQueue =
-      //   //   actions[playerId] !== null && actions[playerId][unitId] !== undefined
-      //   //     ? actions[playerId][unitId]
-      //   //     : rawRobot.action_queue;
-
-      //   // if (actions[playerId] === null) {
-      //   //   error = 'Actions object is null';
-      //   // }
-
-      //   robots.push({
-      //     unitId,
-
-      //     tile: {
-      //       x: rawRobot.position[0],
-      //       y: rawRobot.position[1],
-      //     },
-      //     energy: 0
-      //   });
-      // }
-
-      // const rawTeam = obs.teams[playerId];
       teams.push({
         name: metadata.teamNames[j],
         points: obs.team_points[j],
         wins: obs.team_wins[j],
         error: error,
-        //   name: metadata.teamNames[j],
-        //   faction: rawTeam.faction,
-
-        //   water: rawTeam.water,
-        //   metal: rawTeam.metal,
-
-        //   factories,
         robots,
 
         sensorMask,
-        //   strains: new Set(rawTeam.factory_strains),
-
-        //   placeFirst: rawTeam.place_first,
-        //   factoriesToPlace: rawTeam.factories_to_place,
-
-        //   action: isSetupAction(actions[playerId]) ? parseSetupAction(actions[playerId]) : null,
-
-        //   error,
       });
     }
     steps.push({
@@ -290,7 +150,6 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
       teams: teams as [Team, Team],
     });
   }
-  // console.log(steps);
   return { steps, metadata, params: params };
 }
 

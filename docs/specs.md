@@ -91,10 +91,12 @@ At each time step of a match, we run the following steps in order:
 1. Move all units that have enough energy to move
 2. Execute the sap actions of all units that have enough energy to do so
 3. Update the energy of all units based on their position
-4. Compute new team points
-5. Determine the team vision for all teams and return observations accordingly
-6. Spawn units for all teams. Remove units that have less than 0 energy due to saps.
-7. Environment objects like asteroids/nebula tiles/energy nodes move around in space
+4. Spawn units for all teams. Remove units that have less than 0 energy due to saps.
+5. Determine the team vision / sensor masks for all teams and mask out observations accordingly
+6. Environment objects like asteroids/nebula tiles/energy nodes move around in space
+7. Compute new team points
+
+Note that each match runs for `params.max_steps_in_match` steps and you take that many actions that affect the game. However, you will actually receive `params.max_steps_in_match + 1` frames of observations since the very first frame will either be empty or the previous match's final observation (actions on these observations will not do anything).
 
 ## Game Parameters
 

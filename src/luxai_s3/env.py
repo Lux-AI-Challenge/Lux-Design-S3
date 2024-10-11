@@ -60,44 +60,44 @@ class LuxAIS3Env(environment.Environment):
         )
 
         # Update sensor mask based on the sensor range
-        def update_vision_power_map(unit_pos, sensor_mask):
+        def update_vision_power_map(unit_pos, vision_power_map):
             x, y = unit_pos
             update = jnp.ones(shape= (params.unit_sensor_range * 2 + 1, params.unit_sensor_range * 2 + 1), dtype=jnp.int16)
             for i in range(params.unit_sensor_range + 1):
                 update = update.at[i:params.unit_sensor_range * 2 + 1 - i, i:params.unit_sensor_range * 2 + 1 - i].set(i + 1)
             x, y = unit_pos
-            sensor_mask = jax.lax.dynamic_update_slice(
-                sensor_mask,
+            vision_power_map = jax.lax.dynamic_update_slice(
+                vision_power_map,
                 update=update,
                 start_indices=(
                     x - params.unit_sensor_range + vision_power_map_padding,
                     y - params.unit_sensor_range + vision_power_map_padding,
                 ),
             )
-            return sensor_mask
+            return vision_power_map
 
         # Apply the sensor mask update for all units of both teams
-        def update_unit_vision_power_map(unit_pos, mask, sensor_mask):
+        def update_unit_vision_power_map(unit_pos, unit_mask, vision_power_map):
             return jax.lax.cond(
-                mask,
-                lambda: update_vision_power_map(unit_pos, sensor_mask),
-                lambda: sensor_mask,
+                unit_mask,
+                lambda: vision_power_map + update_vision_power_map(unit_pos, vision_power_map),
+                lambda: vision_power_map,
             )
 
-        def update_team_vision_power_map(team_units, team_mask, sensor_mask):
+        def update_team_vision_power_map(team_units, unit_mask, vision_power_map):
             def body_fun(carry, i):
-                sensor_mask = carry
+                vision_power_map = carry
                 return (
                     update_unit_vision_power_map(
-                        team_units.position[i], team_mask[i], sensor_mask
+                        team_units.position[i], unit_mask[i], vision_power_map
                     ),
                     None,
                 )
 
-            final_sensor_mask, _ = jax.lax.scan(
-                body_fun, sensor_mask, jnp.arange(params.max_units)
+            vision_power_map, _ = jax.lax.scan(
+                body_fun, vision_power_map, jnp.arange(params.max_units)
             )
-            return final_sensor_mask
+            return vision_power_map
 
         vision_power_map = jax.vmap(update_team_vision_power_map)(
             state.units, state.units_mask, vision_power_map
@@ -232,6 +232,15 @@ class LuxAIS3Env(environment.Environment):
                 )
             )(state.units, state.units_mask)
         )
+        
+        """spawn new units in"""
+        spawn_units_in = (state.match_steps % params.spawn_rate == 0)
+        # TODO (stao): only logic in code that probably doesn't not handle more than 2 teams, everything else is vmapped across teams
+        def spawn_team_units(state: EnvState):
+            state = spawn_unit(state, 0, state.units_mask[0].sum(), [0, 0], params)
+            state = spawn_unit(state, 1, state.units_mask[1].sum(), [params.map_width - 1, params.map_height - 1], params)
+            return state
+        state = jax.lax.cond(spawn_units_in, lambda: spawn_team_units(state), lambda: state)
 
         state = self.compute_sensor_masks(state, params)
         
@@ -278,16 +287,6 @@ class LuxAIS3Env(environment.Environment):
         match_ended = state.match_steps >= params.max_steps_in_match
         
         state = state.replace(match_steps=jnp.where(match_ended, -1, state.match_steps), team_points=jnp.where(match_ended, jnp.zeros_like(state.team_points), state.team_points), team_wins=jnp.where(match_ended, state.team_wins.at[winner].add(1), state.team_wins))
-        
-        # spawn units in
-        spawn_units_in = (state.match_steps % params.spawn_rate == 0)
-        # TODO (stao): only logic in code that probably doesn't not handle more than 2 teams, everything else is vmapped across teams
-        def spawn_team_units(state: EnvState):
-            state = spawn_unit(state, 0, state.units_mask[0].sum(), [0, 0], params)
-            state = spawn_unit(state, 1, state.units_mask[1].sum(), [params.map_width - 1, params.map_height - 1], params)
-            return state
-        state = jax.lax.cond(spawn_units_in, lambda: spawn_team_units(state), lambda: state)
-
         # Update state's step count
         state = state.replace(steps=state.steps + 1, match_steps=state.match_steps + 1)
         truncated = state.steps >= (params.max_steps_in_match + 1) * params.match_count_per_episode
@@ -403,7 +402,7 @@ class LuxAIS3Env(environment.Environment):
                 steps=state.steps,
                 match_steps=state.match_steps,
                 relic_nodes=jnp.where(new_relic_nodes_mask[..., None], state.relic_nodes, -1),
-                relic_nodes_mask=new_relic_nodes_mask,
+                relic_nodes_mask=new_relic_nodes_mask
             )
             obs[f"player_{t}"] = team_obs
         return obs

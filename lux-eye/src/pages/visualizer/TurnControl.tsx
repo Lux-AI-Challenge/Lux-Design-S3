@@ -350,6 +350,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
           
           
           <Text>Energy: {step.board.energy[selectedTile.x][selectedTile.y]}</Text>
+          <Text>Vision Power: {step.board.visionPowerMap[0][selectedTile.x][selectedTile.y]}, {step.board.visionPowerMap[1][selectedTile.x][selectedTile.y]}</Text>
         </Group>
       )}
 

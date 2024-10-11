@@ -58,9 +58,6 @@ export interface SapAction extends Action {
   target: Tile;
   validSap: boolean;
 }
-
-// export type SetupAction = BidAction | BuildFactoryAction | WaitAction;
-// export type FactoryAction = BuildRobotAction | WaterAction;
 export type RobotAction = MoveAction | SapAction
 
 export interface Board {
@@ -69,6 +66,7 @@ export interface Board {
   tileType: number[][];
   relicNodes: number[][];
   relicNodeConfigs: number[][][];
+  visionPowerMap: number[][][];
 }
 
 export interface Unit {

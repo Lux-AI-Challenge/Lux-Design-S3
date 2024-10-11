@@ -64,14 +64,6 @@ export function TeamCard({ id, tabHeight, shadow }: TeamCardProps): JSX.Element 
   const team = step.teams[id];
 
   const [isWinner, winnerReason] = getWinnerInfo(episode, id);
-
-  // const sortedFactories = useMemo(() => team.factories.sort(compareUnits), [team]);
-  // const factoryRenderer = useCallback(
-  //   (index: number) => <FactoryDetail factory={sortedFactories[index]} />,
-  //   [sortedFactories],
-  // );
-  // const factoryTileGetter = useCallback((index: number) => getFactoryTiles(sortedFactories[index]), [sortedFactories]);
-
   const sortedRobots = useMemo(() => team.robots.sort(compareUnits), [team]);
   const robotRenderer = useCallback((index: number) => <RobotDetail robot={sortedRobots[index]} />, [sortedRobots]);
   const robotTileGetter = useCallback((index: number) => [sortedRobots[index].tile], [sortedRobots]);

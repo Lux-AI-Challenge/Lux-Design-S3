@@ -62,10 +62,12 @@ The game engine sends a raw JSON in the form of a string to each agent. When the
   "remainingOverageTime": int, # total amount of time your bot can use whenever it exceeds 2s in a turn
   "player": str, # your player id
   "info": {
-    "env_cfg": dict # this game's parameters
+    "env_cfg": dict # some of the game's visible parameters
   }
 }
 ```
 Numbers are filled with -1 if the information is not visible to you. This includes "relic_nodes", "map_features.energy/tile_type", and "units.energy/position". This is determined based on the "sensor_mask" array given to your agent. If the map feature, relic node position, or unit position is in the sensor mask, then the values are the real values, otherwise they are -1.
 
 Moreover, all map sized arrays with shape (W, H) are accessed by the convention of `array[x][y]` where `x` is along the width, and `y` is along the height of the map.
+
+Game parameters are given to agents but not all are visible to the agent. The only ones visible are map_width, map_height, max_steps_in_match, match_count_per_episode, unit_move_cost, unit_sap_cost, unit_sap_range. The rest will have to be inferred by your agent.
