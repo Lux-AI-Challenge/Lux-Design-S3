@@ -14,7 +14,8 @@ We recommend using a python package manager like conda/mamba to install the depe
 
 ```bash
 mamba create -n "lux-s3" "python==3.11"
-pip install luxai_s3
+git clone https://github.com/Lux-AI-Challenge/Lux-Design-S3/
+pip install -e Lux-Design-S3/src
 ```
 
 To verify your installation, you can run a match between two random agents:
