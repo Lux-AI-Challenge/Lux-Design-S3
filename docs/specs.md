@@ -64,19 +64,27 @@ Generally sap actions are risky since a single miss means your ships lose energy
 
 ### Vision
 
-A team's vision is the combined vision of all units on that team. Team vision is essentially a boolean mask / matrix over the 2D map indicating whether that tile's information is visible to the team (in code it is not just 0s / gibberish). In this game, you can think of each unit having an "eye in the sky" sattelite that is capturing information about the units surroundings, but this sattelite has reduced accuracy the farther away the tile is from the unit.
+A team's vision is the combined vision of all units on that team. Team vision is essentially a boolean mask / matrix over the 2D map indicating whether that tile's information is visible to the team. In this game, you can think of each unit having an "eye in the sky" sattelite that is capturing information about the units surroundings, but this sattelite has reduced accuracy the farther away the tile is from the unit.
 
-To determine which map tiles are visible to a unit, we compute a value known as vision power around the unit. The vision power of a tile is equal `1 + unit_vision_power - min(dx, dy)` where `dx` and `dy` are the absolute difference in the x and y coordinates between the unit and the tile. By default the unit vision power is equal to `params.unit_sensor_range`. The `unit_vision_power` value is reduced by `params.nebula_tile_vision_reduction` if the unit is on a nebula tile.
+To determine which map tiles are visible to a team, we compute a vision power value for each tile on the map. For each unit on a team, we check each tile within the unit's sensor range and add `1 + params.unit_sensor_range - min(dx, dy)` to the vision power map at tile `(x+dx, y+dy)` where `(x,y)` is the unit's position and `(dx, dy)` is the offset from the unit's position and `abs(dx) <= params.unit_sensor_range` and `abs(dy) <= params.unit_sensor_range`.
 
 Nebula tiles have a vision reduction value of `params.nebula_tile_vision_reduction`. This number is reduced from every tile's vision power if that tile is a nebula tile.
 
 For example, naturally without any nebula tiles the vision power values look like below and create a square of visibility around the unit.
 
-TODO: insert small diagram
+![](./assets/vision_power.png)
 
-When a unit is near a nebula tile, it can't see details about some nebula tiles, but it can see tiles beyond nebula tiles.
+When a unit is near a nebula tile, it can't see details about some nebula tiles, but it can see tiles beyond nebula tiles. Here the unit has a sensor range of 2 and the nebula tile vision reduction value is 2. It can see itself since the vision power centered at the unit is 3, but it can't see other nebula tiles since they are too far or the nebula tile vision reduction reduces the vision power to 0 or less.
 
-When a unit is inside a nebula tile, if the nebula vision reduction is powerful enough, the unit cannot see far if not anywhere at all.
+![](./assets/vision_nebula.png)
+
+When a unit is inside a nebula tile, if the nebula vision reduction is powerful enough (here the nebula vision reduction is 3, unit sensor range is 2), the unit cannot even see itself or any other nebula tiles.
+
+![](./assets/vision_nebula_inside.png)
+
+Unit vision can overlap and increase the vision power linearly, which can help handle the situations like above when you cannot see anything. Below the nebula vision reduction is 3 and the unit sensor range is 2, and now some of the nebula tiles are visible thanks to the overlapping vision of two units.
+
+![](./assets/vision_overlap.png)
 
 ## Win Conditions
 

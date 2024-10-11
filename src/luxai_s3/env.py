@@ -61,14 +61,14 @@ class LuxAIS3Env(environment.Environment):
 
         # Update sensor mask based on the sensor range
         def update_vision_power_map(unit_pos, vision_power_map):
-            x, y = unit_pos
-            update = jnp.ones(shape= (params.unit_sensor_range * 2 + 1, params.unit_sensor_range * 2 + 1), dtype=jnp.int16)
+            x, y = unit_pos            
+            existing_vision_power = jax.lax.dynamic_slice(vision_power_map, start_indices=(x - params.unit_sensor_range + vision_power_map_padding, y - params.unit_sensor_range + vision_power_map_padding), slice_sizes=(params.unit_sensor_range * 2 + 1, params.unit_sensor_range * 2 + 1))
+            update = jnp.zeros_like(existing_vision_power)
             for i in range(params.unit_sensor_range + 1):
                 update = update.at[i:params.unit_sensor_range * 2 + 1 - i, i:params.unit_sensor_range * 2 + 1 - i].set(i + 1)
-            x, y = unit_pos
             vision_power_map = jax.lax.dynamic_update_slice(
                 vision_power_map,
-                update=update,
+                update=update + existing_vision_power,
                 start_indices=(
                     x - params.unit_sensor_range + vision_power_map_padding,
                     y - params.unit_sensor_range + vision_power_map_padding,
@@ -80,7 +80,7 @@ class LuxAIS3Env(environment.Environment):
         def update_unit_vision_power_map(unit_pos, unit_mask, vision_power_map):
             return jax.lax.cond(
                 unit_mask,
-                lambda: vision_power_map + update_vision_power_map(unit_pos, vision_power_map),
+                lambda: update_vision_power_map(unit_pos, vision_power_map),
                 lambda: vision_power_map,
             )
 
@@ -242,6 +242,7 @@ class LuxAIS3Env(environment.Environment):
             return state
         state = jax.lax.cond(spawn_units_in, lambda: spawn_team_units(state), lambda: state)
 
+        jax.debug.print("=== {step}", step=state.steps)
         state = self.compute_sensor_masks(state, params)
         
         # Shift objects around in space

@@ -60,7 +60,7 @@ class LuxAIS3GymEnv(gym.Env):
         # TODO (stao): check why this keeps recompiling when marking structs as static args
         self.rng_key, subkey = jax.random.split(self.rng_key)
         # nebula_tile_energy_reduction = jax.random.choice(subkey, jax.numpy.array(env_params_ranges["nebula_tile_energy_reduction"]))
-        params = EnvParams(max_steps_in_match=100, nebula_tile_energy_reduction=100, match_count_per_episode=3, nebula_tile_vision_reduction=2)
+        params = EnvParams(max_steps_in_match=100, nebula_tile_energy_reduction=100, match_count_per_episode=3, nebula_tile_vision_reduction=3)
         if options is not None and "params" in options:
             params = options["params"]
         

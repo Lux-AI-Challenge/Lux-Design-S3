@@ -98,17 +98,17 @@ function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step
     }
   }
 
-  for (let i = 0; i < board.energyNodes.length; i++) {
-    const [canvasX, canvasY] = tileToCanvas(config, { x: board.energyNodes[i][0], y: board.energyNodes[i][1] });
-    ctx.fillStyle = 'green';
-    ctx.fillRect(canvasX, canvasY, config.tileSize / 2, config.tileSize / 2);
-  }
+  // for (let i = 0; i < board.energyNodes.length; i++) {
+  //   const [canvasX, canvasY] = tileToCanvas(config, { x: board.energyNodes[i][0], y: board.energyNodes[i][1] });
+  //   ctx.fillStyle = 'green';
+  //   ctx.fillRect(canvasX, canvasY, config.tileSize / 2, config.tileSize / 2);
+  // }
 
   for (let i = 0; i < board.relicNodes.length; i++) {
     const [canvasX, canvasY] = tileToCanvas(config, { x: board.relicNodes[i][0], y: board.relicNodes[i][1] });
 
     ctx.fillStyle = 'orange';
-    ctx.fillRect(canvasX, canvasY, config.tileSize / 2, config.tileSize / 2);
+    ctx.fillRect(canvasX + config.tileSize / 4, canvasY + config.tileSize / 4, config.tileSize / 2, config.tileSize / 2);
     if (config.relicConfigs) {
       for (
         let dx = -Math.floor(envParams.relic_config_size / 2);
