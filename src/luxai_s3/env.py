@@ -251,20 +251,28 @@ class LuxAIS3Env(environment.Environment):
         state = state.replace(map_features=state.map_features.replace(tile_type=new_tile_types_map), energy_nodes=new_energy_nodes)
 
         
-        # Compute relic scores
-        def compute_relic_score(unit, relic_nodes_map_weights, mask):
-            total_score = relic_nodes_map_weights[unit.position[0], unit.position[1]]
-            return total_score & mask
+        # # Compute relic scores
+        # def compute_relic_score(unit, relic_nodes_map_weights, mask):
+        #     total_score = relic_nodes_map_weights[unit.position[0], unit.position[1]]
+        #     return total_score & mask
 
-        def team_relic_score(units, units_mask):
-            scores = jax.vmap(compute_relic_score, in_axes=(0, None, 0))(
-                units,
-                state.relic_nodes_map_weights,
-                units_mask,
-            )
+        def team_relic_score(unit_counts_map):
+            scores = (unit_counts_map > 0) & state.relic_nodes_map_weights
+            # scores = jax.vmap(compute_relic_score, in_axes=(0, None, 0))(
+            #     units,
+            #     state.relic_nodes_map_weights,
+            #     units_mask,
+            # )
             return jnp.sum(scores, dtype=jnp.int32)
+        # map of total units per team on each tile, shape (num_teams, map_width, map_height)
+        unit_counts_map = jnp.zeros((params.num_teams, params.map_width, params.map_height), dtype=jnp.int32)
+        def update_unit_counts_map(unit_position, unit_mask, unit_counts_map):
+            unit_counts_map = unit_counts_map.at[unit_position[0], unit_position[1]].add(unit_mask)
+            return unit_counts_map
+        for t in range(params.num_teams):
+            unit_counts_map = unit_counts_map.at[t].add(jnp.sum(jax.vmap(update_unit_counts_map, in_axes=(0, 0, None), out_axes=0)(state.units.position[t], state.units_mask[t], unit_counts_map[t]), axis=0))
 
-        team_scores = jax.vmap(team_relic_score)(state.units, state.units_mask)
+        team_scores = jax.vmap(team_relic_score)(unit_counts_map)
         # team_1_score = team_relic_score(state.units[1], state.units_mask[1])
         # jax.debug.print("{team_scores}", team_scores=team_scores)
         # Update team points
