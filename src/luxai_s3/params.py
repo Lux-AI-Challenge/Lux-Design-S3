@@ -84,10 +84,10 @@ class EnvParams:
 env_params_ranges = dict(
     map_type=[1],
     unit_move_cost=list(range(1, 6)),
-    unit_sensor_range=list(range(2, 4)),
+    unit_sensor_range=list(range(2, 5)),
     nebula_tile_vision_reduction=list(range(0,4)),
     nebula_tile_energy_reduction=[0, 10, 100],
-    unit_sap_cost=list(range(10, 51)),
+    unit_sap_cost=list(range(30, 51)),
     unit_sap_range=list(range(3, 8)),
     unit_sap_dropoff_factor=[0.5, 1],
     
