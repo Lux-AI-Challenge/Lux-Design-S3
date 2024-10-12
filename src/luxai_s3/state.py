@@ -342,6 +342,8 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         energy_nodes_mask_half = energy_nodes_mask_half.at[0].set(True)
         energy_nodes_mask = energy_nodes_mask.at[:params.max_energy_nodes // 2].set(energy_nodes_mask_half)
         energy_nodes_mask = energy_nodes_mask.at[params.max_energy_nodes // 2:].set(energy_nodes_mask_half)
+        
+        # TODO (stao): provide more randomization options for energy node functions.
         energy_node_fns = jnp.array(
             [
                 [0, 1.2, 1, 4],

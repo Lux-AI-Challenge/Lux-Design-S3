@@ -191,3 +191,5 @@ window.episode = {json.dumps(replay)};
             await player.proc.cleanup()
 
         return rewards
+    def close(self):
+        pass
