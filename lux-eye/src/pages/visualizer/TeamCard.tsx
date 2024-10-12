@@ -17,20 +17,19 @@ export function getWinnerInfo(episode: Episode, team: number): [won: boolean, re
   const meError = episode.steps.map(step => step.teams[team].error).some(error => error !== null);
   const opponentError = episode.steps.map(step => step.teams[team === 0 ? 1 : 0].error).some(error => error !== null);
 
-  const mePoints = funcPoints(me, lastStep.board);
-  const opponentPoints = funcPoints(opponent, lastStep.board);
-
+  const meWins = me.wins;
+  const opponentWins = opponent.wins;
   if (meError && opponentError) {
     return [true, 'Draw, both teams errored'];
   } else if (meError && !opponentError) {
     return [false, null];
   } else if (!meError && opponentError) {
     return [true, 'Winner by opponent error'];
-  } else if (lastStep.step === episode.params.max_steps_in_match * episode.params.match_count_per_episode) {
-    if (mePoints > opponentPoints) {
-      return [true, 'Winner by points'];
-    } else if (mePoints === opponentPoints) {
-      return [true, 'Draw, same points'];
+  } else if (lastStep.step === (episode.params.max_steps_in_match + 1) * episode.params.match_count_per_episode) {
+    if (meWins > opponentWins) {
+      return [true, 'Winner by total match wins'];
+    } else if (meWins === opponentWins) {
+      return [true, 'Draw???'];
     } else {
       return [false, null];
     }
