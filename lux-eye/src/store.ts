@@ -97,7 +97,7 @@ export const useStore = create(
 
       load: data => {
         const formatError =
-          'Episode data has unsupported format, only HTML and JSON replays generated using the luxai-s2 CLI and JSON replays generated using the kaggle-environments CLI are supported';
+          'Episode data has unsupported format, only HTML and JSON replays generated using the luxai-s3 CLI and JSON replays generated using the kaggle-environments CLI are supported';
 
         if (typeof data !== 'object') {
           if (!data.startsWith('{')) {
