@@ -219,6 +219,18 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
               </td>
               <td>Toggle Energy Field Display</td>
             </tr>
+            <tr>
+              <td>
+                <Kbd>r</Kbd>
+              </td>
+              <td>Toggle Relic Config Display</td>
+            </tr>
+            <tr>
+              <td>
+                <Kbd>s</Kbd>
+              </td>
+              <td>Toggle Sensor Mask Display</td>
+            </tr>
             {SPEEDS.map((speed, i) => (
               <tr key={i}>
                 <td>

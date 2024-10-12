@@ -228,12 +228,32 @@ function drawBoard(
   ctx.restore();
 
   drawTileBackgrounds(ctx, config, step, envParams);
+  const robotPositions = new Map<string, number>();
 
+  for (let i = 0; i < 2; i++) {
+    for (const robot of step.teams[i].robots) {
+      const key = `${i},${robot.tile.x},${robot.tile.y}`;
+      if (robotPositions.has(key)) {
+        robotPositions.set(key, (robotPositions.get(key) ?? 0) + 1);
+      } else {
+        robotPositions.set(key, 1);
+      }
+    }
+  }
   for (let i = 0; i < 2; i++) {
     for (const robot of step.teams[i].robots) {
       drawRobot(ctx, config, robot, i, selectedTile);
     }
   }
+  robotPositions.forEach((count, key) => {
+    const [team, x, y] = key.split(',').map(Number);
+    const [canvasX, canvasY] = tileToCanvas(config, { x, y });
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(count.toString(), canvasX + config.tileSize / 2, canvasY + config.tileSize / 2);
+  });
 
   if (selectedTile !== null) {
     drawSelectedTile(ctx, config, selectedTile);
