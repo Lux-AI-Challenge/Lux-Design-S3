@@ -1,5 +1,5 @@
 {
-  "name": "@lux-ai/lux-eye-s2",
+  "name": "@lux-ai/lux-eye-s3",
   "version": "2.1.9",
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "fix": "yarn fix:eslint && yarn fix:prettier",
     "fix:eslint": "yarn lint:eslint --fix",
     "fix:prettier": "prettier --write --ignore-path .gitignore '**/*.{ts,tsx,html,css,yml,json}'",
-    "prepublish": "yarn build --base=https://unpkg.com/@lux-ai/lux-eye-s2@latest/dist/"
+    "prepublish": "yarn build --base=https://unpkg.com/@lux-ai/lux-eye-s3@latest/dist/"
   },
   "dependencies": {
     "@emotion/react": "^11.10.5",

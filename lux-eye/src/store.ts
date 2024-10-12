@@ -241,7 +241,7 @@ export const useStore = create(
       },
     }),
     {
-      name: 'lux-eye-s2',
+      name: 'lux-eye-s3',
       partialize: state =>
         ({
           minimalTheme: state.minimalTheme,
