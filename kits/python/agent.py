@@ -52,28 +52,18 @@ class Agent():
             if len(self.relic_node_positions) > 0:
                 nearest_relic_node_position = self.relic_node_positions[0]
                 manhattan_distance = abs(unit_pos[0] - nearest_relic_node_position[0]) + abs(unit_pos[1] - nearest_relic_node_position[1])
+                
+                # if close to the relic node we want to hover around it and hope to gain points
                 if manhattan_distance <= 4:
                     random_direction = np.random.randint(0, 5)
                     actions[unit_id] = [random_direction, 0, 0]
                 else:
+                    # otherwise we want to move towards the relic node
                     actions[unit_id] = [direction_to(unit_pos, nearest_relic_node_position), 0, 0]
             else:
-                if unit_id % 2 == 0:
-                    # randomly explore by picking a random location on the map and moving there for about 20 steps
-                    if step % 20 == 0 or unit_id not in self.unit_explore_locations:
-                        rand_loc = (np.random.randint(0, self.env_cfg["map_width"]), np.random.randint(0, self.env_cfg["map_height"]))
-                        self.unit_explore_locations[unit_id] = rand_loc
-                    actions[unit_id] = [direction_to(unit_pos, self.unit_explore_locations[unit_id]), 0, 0]
-                else:
-                    # follow energy field to its peak
-                    for delta in np.array([[0, 0], [0, 1], [1, 0], [0, -1], [-1, 0]]):
-                        next_pos = unit_pos + delta # (x, y) format
-                        if next_pos[0] < 0 or next_pos[0] >= self.env_cfg["map_width"] or next_pos[1] < 0 or next_pos[1] >= self.env_cfg["map_height"]:
-                            continue
-                        next_pos_energy = obs["map_features"]["energy"][next_pos[0], next_pos[1]]
-                        cur_pos_energy = obs["map_features"]["energy"][unit_pos[0], unit_pos[1]]
-                        if next_pos_energy > cur_pos_energy:
-                            actions[unit_id] = [direction_to(unit_pos, next_pos), 0, 0]
-                            print(f"unit {unit_id} at {unit_pos} moving to {next_pos}, {next_pos_energy}, {cur_pos_energy}", file=sys.stderr)
-                            break
+                # randomly explore by picking a random location on the map and moving there for about 20 steps
+                if step % 20 == 0 or unit_id not in self.unit_explore_locations:
+                    rand_loc = (np.random.randint(0, self.env_cfg["map_width"]), np.random.randint(0, self.env_cfg["map_height"]))
+                    self.unit_explore_locations[unit_id] = rand_loc
+                actions[unit_id] = [direction_to(unit_pos, self.unit_explore_locations[unit_id]), 0, 0]
         return actions

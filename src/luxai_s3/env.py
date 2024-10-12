@@ -242,7 +242,6 @@ class LuxAIS3Env(environment.Environment):
             return state
         state = jax.lax.cond(spawn_units_in, lambda: spawn_team_units(state), lambda: state)
 
-        jax.debug.print("=== {step}", step=state.steps)
         state = self.compute_sensor_masks(state, params)
         
         # Shift objects around in space
@@ -283,8 +282,9 @@ class LuxAIS3Env(environment.Environment):
         # if match ended, then remove all units, update team wins, reset team points
         winner_by_points = jnp.where(state.team_points.max() > state.team_points.min(), jnp.argmax(state.team_points), -1)
         winner_by_energy = jnp.sum(state.units.energy[..., 0] * state.units_mask, axis=1)
+        winner_by_energy = jnp.where(winner_by_energy.max() > winner_by_energy.min(), jnp.argmax(winner_by_energy), -1)
 
-        winner = winner_by_points
+        winner = jnp.where(winner_by_points != -1, winner_by_points, jnp.where(winner_by_energy != -1, winner_by_energy, jax.random.randint(key, shape=(), minval=0, maxval=params.num_teams + 1)))
         match_ended = state.match_steps >= params.max_steps_in_match
         
         state = state.replace(match_steps=jnp.where(match_ended, -1, state.match_steps), team_points=jnp.where(match_ended, jnp.zeros_like(state.team_points), state.team_points), team_wins=jnp.where(match_ended, state.team_wins.at[winner].add(1), state.team_wins))
@@ -325,7 +325,6 @@ class LuxAIS3Env(environment.Environment):
     ) -> Tuple[EnvObs, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Performs step transitions in the environment."""
         # Use default env parameters if no others specified
-        print("Compiled step")
         if params is None:
             params = self.default_params
         key, key_reset = jax.random.split(key)
@@ -361,7 +360,6 @@ class LuxAIS3Env(environment.Environment):
         self, key: chex.PRNGKey, params: Optional[EnvParams] = None
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
-        print("Compiled reset")
         # Use default env parameters if no others specified
         if params is None:
             params = self.default_params
