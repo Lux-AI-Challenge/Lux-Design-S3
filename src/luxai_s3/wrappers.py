@@ -62,7 +62,7 @@ class LuxAIS3GymEnv(gym.Env):
         for k, v in env_params_ranges.items():
             self.rng_key, subkey = jax.random.split(self.rng_key)
             randomized_game_params[k] = jax.random.choice(subkey, jax.numpy.array(v)).item()
-        params = EnvParams(max_steps_in_match=100, match_count_per_episode=5, **randomized_game_params)
+        params = EnvParams(**randomized_game_params)
         if options is not None and "params" in options:
             params = options["params"]
         
