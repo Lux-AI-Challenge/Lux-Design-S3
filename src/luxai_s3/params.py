@@ -34,6 +34,10 @@ class EnvParams:
     """
     The unit sap dropoff factor multiplied by unit_sap_drain
     """
+    unit_energy_void_factor: float = 0.125
+    """
+    The unit energy void factor multiplied by unit_energy
+    """
 
 
     # configs for energy nodes
@@ -89,9 +93,8 @@ env_params_ranges = dict(
     nebula_tile_energy_reduction=[0, 10, 100],
     unit_sap_cost=list(range(30, 51)),
     unit_sap_range=list(range(3, 8)),
-    unit_sap_dropoff_factor=[0.5, 1],
-    
-    
+    unit_sap_dropoff_factor=[0.25, 0.5, 1],
+    unit_energy_void_factor=[0.0625, 0.125, 0.25, 0.375],
     # map randomizations
     nebula_tile_drift_speed=[-0.05, -0.025, 0, 0.025, 0.05],
     energy_node_drift_speed=[0.01, 0.02, 0.03, 0.04, 0.05],

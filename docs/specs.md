@@ -46,6 +46,8 @@ In code, a random 5x5 configuration / mask centered on the relic node is generat
 
 Units in the game are ships that can move one tile in 5 directions (center, up, right, down, left) and perform a ranged energy sapping action. Units can overlap with other friendly units if they move onto the same tile. Units have a energy property which determines whether they can perform actions and start with 100 energy and can have a max of 400 energy. Energy is recharged via the energy field of the map. They always spawn on one of the two corners of the map depending on which team they are on.
 
+Note that nebula tiles and energy fields can modify the energy of a unit when it is on that tile. However they can never reduce the energy of a unit below 0, only opposing units can do that which will then remove the unit from the game to be respawned at a later timestep. Unit IDs range from 0 to `params.max_units - 1` for each team, and are recycled when units are spawned in if a previous one was removed.
+
 ### Move Actions
 
 All move actions except moving center cost `params.unit_move_cost` energy to perform. Moving center is always free (a zero action). Attempting to move off the edge of the map results in no movement occuring but energy is still consumed. Units cannot move onto tiles with an impassible feature like an asteroid tile.
@@ -86,25 +88,36 @@ Unit vision can overlap and increase the vision power linearly, which can help h
 
 ![](./assets/vision_overlap.png)
 
+
+### Collisions / Energy Void Fields
+In close quarters, units can impact each other in two ways, via direct collisions or by being adjacent to each other and sapping energy via their energy void fields.
+
+In the event of two or more units from opposing teams occupy the same tile at the end of a turn, the team with the highest aggregate energy among its units on that tile survive, while the units of the opposing teams are removed from the game. If it is a tie, all units are removed from the game.
+
+Furthermore, each unit generates an "energy void" field around itself that affects all cardinally (up, right, down left) adjacent opposition units. To determine how exactly each unit is affected by these energy void fields, we compute a 2D map for each team indicating the energy void strength at each tile. A unit contributes to tiles adjacent to itself a energy void strength equal to the total amount of energy the unit has at the start of the turn multiplied by `params.unit_energy_void_factor` rounded down. After a energy void map is computed for each team, a unit's energy is reduced by the energy void strength of the tile it is on divided by the total number of units on that tile. Note that units removed due to collisions do not contribute to the energy void field.
+
+The energy void fields generally encourage stacking units to better spread out energy sapped by energy void fields of opposition units.
+
+<!-- TODO add some example diagrams -->
+
 ## Win Conditions
 
 To win the game, the team must have won the most matches out of the 5 match sequence.
 
 To win a match, the team must have gained more relic points than the other team at the end of the match. If the relic points scores are tied, then the match winner is decided by who has more total unit energy. If that is also tied then the winner is chosen at random.
 
-### Collisions 
-TODO (stao): add collision rules and to the game engine
 
 ## Match Resolution Order
 
 At each time step of a match, we run the following steps in order:
 1. Move all units that have enough energy to move
 2. Execute the sap actions of all units that have enough energy to do so
-3. Update the energy of all units based on their position
-4. Spawn units for all teams. Remove units that have less than 0 energy due to saps.
-5. Determine the team vision / sensor masks for all teams and mask out observations accordingly
-6. Environment objects like asteroids/nebula tiles/energy nodes move around in space
-7. Compute new team points
+3. Resolve collisions and apply energy void fields
+4. Update the energy of all units based on their position (energy fields and nebula tiles)
+5. Spawn units for all teams. Remove units that have less than 0 energy.
+6. Determine the team vision / sensor masks for all teams and mask out observations accordingly
+7. Environment objects like asteroids/nebula tiles/energy nodes move around in space
+8. Compute new team points
 
 Note that each match runs for `params.max_steps_in_match` steps and you take that many actions that affect the game. However, you will actually receive `params.max_steps_in_match + 1` frames of observations since the very first frame will either be empty or the previous match's final observation (actions on these observations will not do anything).
 

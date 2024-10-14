@@ -25,7 +25,17 @@ class LuxAIS3Env(environment.Environment):
     def default_params(self) -> EnvParams:
         return EnvParams()
     
-    def compute_energy_features(self, state, params):
+    def compute_unit_counts_map(self, state: EnvState, params: EnvParams):
+        # map of total units per team on each tile, shape (num_teams, map_width, map_height)
+        unit_counts_map = jnp.zeros((params.num_teams, params.map_width, params.map_height), dtype=jnp.int32)
+        def update_unit_counts_map(unit_position, unit_mask, unit_counts_map):
+            unit_counts_map = unit_counts_map.at[unit_position[0], unit_position[1]].add(unit_mask)
+            return unit_counts_map
+        for t in range(params.num_teams):
+            unit_counts_map = unit_counts_map.at[t].add(jnp.sum(jax.vmap(update_unit_counts_map, in_axes=(0, 0, None), out_axes=0)(state.units.position[t], state.units_mask[t], unit_counts_map[t]), axis=0))
+        return unit_counts_map
+    
+    def compute_energy_features(self, state: EnvState, params: EnvParams):
         # first compute a array of shape (map_height, map_width, num_energy_nodes) with values equal to the distance of the tile to the energy node
         mm = jnp.meshgrid(jnp.arange(params.map_width), jnp.arange(params.map_height))
         mm = jnp.stack([mm[0], mm[1]]).T # mm[x, y] gives [x, y]
@@ -126,6 +136,10 @@ class LuxAIS3Env(environment.Environment):
         
         # remove all units if the match ended in the previous step indicated by a reset of match_steps to 0
         state = state.replace(units_mask=jnp.where(state.match_steps == 0, jnp.zeros_like(state.units_mask), state.units_mask))
+        """remove units that have less than 0 energy"""
+        # we remove units at the start of the timestep so that the visualizer can show the unit with negative energy and is marked for removal soon.
+        state = state.replace(units_mask=(state.units.energy[..., 0] >= 0) & state.units_mask)
+        
         """ process unit movement """
         # 0 is do nothing, 1 is move up, 2 is move right, 3 is move down, 4 is move left, 5 is sap
         # Define movement directions
@@ -169,12 +183,14 @@ class LuxAIS3Env(environment.Environment):
             )(state.units, move_actions, state.units_mask)
         )
         
+        original_unit_energy = state.units.energy
+        """original amount of energy of all units"""
+        
         """apply sap actions"""
         sap_action_mask = action[..., 0] == 5
         sap_action_deltas = action[..., 1:]
-        def sap_unit(all_units: UnitState, sap_action_mask, sap_action_deltas, units_mask):
+        def sap_unit(current_energy: jnp.ndarray, all_units: UnitState, sap_action_mask, sap_action_deltas, units_mask):
             # TODO (stao): clean up this code. It is probably slower than it needs be and could be vmapped perhaps.
-            current_energy = all_units.energy
             for t in range(params.num_teams):
                 other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
                 team_sap_action_deltas = sap_action_deltas[t] # (max_units, 2)
@@ -213,15 +229,62 @@ class LuxAIS3Env(environment.Environment):
             return all_units
             
         state = state.replace(
-            units=sap_unit(state.units, sap_action_mask, sap_action_deltas, state.units_mask)
+            units=sap_unit(original_unit_energy, state.units, sap_action_mask, sap_action_deltas, state.units_mask)
         )
-
+        
+        """resolve collisions and energy void fields"""
+                
+        # compute energy void fields for all teams and the energy + unit counts 
+        unit_aggregate_energy_void_map = jnp.zeros(shape=(params.num_teams, params.map_width, params.map_height), dtype=jnp.float32)
+        unit_counts_map = self.compute_unit_counts_map(state, params)
+        # TODO (stao): this doesn't need to be a float?
+        unit_aggregate_energy_map = jnp.zeros(shape=(params.num_teams, params.map_width, params.map_height), dtype=jnp.float32)
+        for t in range(params.num_teams):
+            def scan_body(carry, x):
+                agg_energy_void_map, agg_energy_map = carry
+                unit_energy, unit_position, unit_mask = x
+                agg_energy_map = agg_energy_map.at[unit_position[0], unit_position[1]].add(unit_energy[0] * unit_mask)
+                for deltas in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    new_pos = unit_position + jnp.array(deltas)
+                    in_map = (new_pos[0] >= 0) & (new_pos[0] < params.map_width) & (new_pos[1] >= 0) & (new_pos[1] < params.map_height)
+                    agg_energy_void_map = agg_energy_void_map.at[new_pos[0], new_pos[1]].add(unit_energy[0] * unit_mask * in_map)
+                return (agg_energy_void_map, agg_energy_map), None
+            agg_energy_void_map, agg_energy_map = jax.lax.scan(scan_body, (unit_aggregate_energy_void_map[t], unit_aggregate_energy_map[t]), (original_unit_energy[t], state.units.position[t], state.units_mask[t]))[0]
+            unit_aggregate_energy_void_map = unit_aggregate_energy_void_map.at[t].add(agg_energy_void_map)
+            unit_aggregate_energy_map = unit_aggregate_energy_map.at[t].add(agg_energy_map)
+            
+        # resolve collisions and keep only the surviving units
+        for t in range(params.num_teams):
+            other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
+            # get the energy map for the current team
+            opposing_unit_counts_map = unit_counts_map[other_team_ids].sum(axis=0) # (map_width, map_height)
+            team_energy_map = unit_aggregate_energy_map[t]
+            opposing_aggregate_energy_map = unit_aggregate_energy_map[other_team_ids].max(axis=0) # (map_width, map_height)
+            # unit survives if there are opposing units on the tile, and if the opposing unit stack has less energy on the tile than the current unit
+            surviving_unit_mask = jax.vmap(
+                lambda unit_position : (opposing_unit_counts_map[unit_position[0], unit_position[1]] == 0) | 
+                (opposing_aggregate_energy_map[unit_position[0], unit_position[1]] < team_energy_map[unit_position[0], unit_position[1]])
+            )(state.units.position[t])
+            state = state.replace(units_mask=state.units_mask.at[t].set(surviving_unit_mask & state.units_mask[t]))
+        # apply energy void fields
+        for t in range(params.num_teams):
+            other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
+            oppposition_energy_void_map = unit_aggregate_energy_void_map[other_team_ids].sum(axis=0) # (map_width, map_height)
+            # unit on team t loses energy to void field equal to params.unit_energy_void_factor * void_energy / num units stacked with unit on the same tile
+            team_unit_energy = state.units.energy[t] - jnp.floor(jax.vmap(lambda unit_position: params.unit_energy_void_factor * oppposition_energy_void_map[unit_position[0], unit_position[1]] / unit_counts_map[t][unit_position[0], unit_position[1]])(state.units.position[t])[..., None]).astype(jnp.int16)
+            state = state.replace(units=state.units.replace(energy=state.units.energy.at[t].set(team_unit_energy)))            
+        
         """apply energy field to the units"""
-        # Update unit energy based on the energy field of their current position
+        # Update unit energy based on the energy field and nebula tileof their current position
         def update_unit_energy(unit: UnitState, mask):
             x, y = unit.position
             energy_gain = state.map_features.energy[x, y] - (state.map_features.tile_type[x, y] == NEBULA_TILE) * params.nebula_tile_energy_reduction
+            # if energy gain is less than 0
+            # new_energy = jnp.where((unit.energy < 0) & (energy_gain < 0))
             new_energy = jnp.clip(unit.energy + energy_gain, params.min_unit_energy, params.max_unit_energy)
+            # if unit already had negative energy due to opposition units and after energy field/nebula tile it is still below 0, then it will be removed next step
+            # and we keep its energy value at whatever it is
+            new_energy = jnp.where((unit.energy < 0) & (unit.energy + energy_gain < 0), unit.energy, new_energy)
             return UnitState(position=unit.position, energy=jnp.where(mask, new_energy, unit.energy))
 
         # Apply the energy update for all units of both teams
@@ -237,8 +300,18 @@ class LuxAIS3Env(environment.Environment):
         spawn_units_in = (state.match_steps % params.spawn_rate == 0)
         # TODO (stao): only logic in code that probably doesn't not handle more than 2 teams, everything else is vmapped across teams
         def spawn_team_units(state: EnvState):
-            state = spawn_unit(state, 0, state.units_mask[0].sum(), [0, 0], params)
-            state = spawn_unit(state, 1, state.units_mask[1].sum(), [params.map_width - 1, params.map_height - 1], params)
+            team_0_unit_count = state.units_mask[0].sum()
+            team_1_unit_count = state.units_mask[1].sum()
+            team_0_new_unit_id = state.units_mask[0].argmin()
+            team_1_new_unit_id = state.units_mask[1].argmin()
+            state = state.replace(units=state.units.replace(position=jnp.where(team_0_unit_count < params.max_units, state.units.position.at[0, team_0_new_unit_id, :].set(jnp.array([0, 0], dtype=jnp.int16)), state.units.position)))
+            state = state.replace(units=state.units.replace(energy=jnp.where(team_0_unit_count < params.max_units, state.units.energy.at[0, team_0_new_unit_id, :].set(jnp.array([params.init_unit_energy], dtype=jnp.int16)), state.units.energy)))
+            state = state.replace(units=state.units.replace(position=jnp.where(team_1_unit_count < params.max_units, state.units.position.at[1, team_1_new_unit_id, :].set(jnp.array([params.map_width - 1, params.map_height - 1], dtype=jnp.int16)), state.units.position)))
+            state = state.replace(units=state.units.replace(energy=jnp.where(team_1_unit_count < params.max_units, state.units.energy.at[1, team_1_new_unit_id, :].set(jnp.array([params.init_unit_energy], dtype=jnp.int16)), state.units.energy)))
+            state = state.replace(units_mask=state.units_mask.at[0, team_0_new_unit_id].set(team_0_unit_count < params.max_units))
+            state = state.replace(units_mask=state.units_mask.at[1, team_1_new_unit_id].set(team_1_unit_count < params.max_units))
+            # state = jnp.where(team_0_unit_count < params.max_units, spawn_unit(state, 0, team_0_new_unit_id, [0, 0], params), state)
+            # state = jnp.where(team_1_unit_count < params.max_units, spawn_unit(state, 1, team_1_new_unit_id, [params.map_width - 1, params.map_height - 1], params), state)
             return state
         state = jax.lax.cond(spawn_units_in, lambda: spawn_team_units(state), lambda: state)
 
@@ -265,15 +338,9 @@ class LuxAIS3Env(environment.Environment):
         def team_relic_score(unit_counts_map):
             scores = (unit_counts_map > 0) & state.relic_nodes_map_weights
             return jnp.sum(scores, dtype=jnp.int32)
-        # map of total units per team on each tile, shape (num_teams, map_width, map_height)
-        unit_counts_map = jnp.zeros((params.num_teams, params.map_width, params.map_height), dtype=jnp.int32)
-        def update_unit_counts_map(unit_position, unit_mask, unit_counts_map):
-            unit_counts_map = unit_counts_map.at[unit_position[0], unit_position[1]].add(unit_mask)
-            return unit_counts_map
-        for t in range(params.num_teams):
-            unit_counts_map = unit_counts_map.at[t].add(jnp.sum(jax.vmap(update_unit_counts_map, in_axes=(0, 0, None), out_axes=0)(state.units.position[t], state.units_mask[t], unit_counts_map[t]), axis=0))
-
-        team_scores = jax.vmap(team_relic_score)(unit_counts_map)
+        
+        # note we need to recompue unit counts since units can get removed due to collisions
+        team_scores = jax.vmap(team_relic_score)(self.compute_unit_counts_map(state, params))
         # Update team points
         state = state.replace(
             team_points=state.team_points + team_scores
