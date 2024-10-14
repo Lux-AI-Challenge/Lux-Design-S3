@@ -28,5 +28,4 @@ luxai-s3 --help
 luxai-s3 path/to/bot/main.py path/to/bot/main.py --output replay.json
 ```
 
-Then upload the replay.json to the online visualizer here: https://lux-eye-s3.netlify.app/ (a link on the lux-ai.org website will be up soon) 
-<!-- https://s3vis.lux-ai.org/ -->
+Then upload the replay.json to the online visualizer here: https://s3vis.lux-ai.org/ (a link on the lux-ai.org website will be up soon) 
