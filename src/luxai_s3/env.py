@@ -203,11 +203,6 @@ class LuxAIS3Env(environment.Environment):
                 # the number of times other units are sapped
                 other_units_sapped_count = jnp.sum(jnp.all(all_units.position[other_team_ids][:, :, None] == team_sapped_positions[None], axis=-1), axis=-1, dtype=jnp.int16) # (len(other_team_ids), max_units)
                 # remove unit_sap_cost energy from opposition units that were in the middle of a sap action.
-                # def true_fn():
-                #     jax.debug.breakpoint()
-                # def false_fn():
-                #     pass
-                # jax.lax.cond(sap_action_mask.any(), true_fn, false_fn)
                 all_units = all_units.replace(
                     energy=all_units.energy.at[other_team_ids].set(
                         jnp.where(other_units_sapped_count[:, :, None] > 0, 
