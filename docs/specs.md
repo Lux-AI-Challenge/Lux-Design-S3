@@ -24,12 +24,14 @@ The map is a randomly generated 2D grid of size 24x24. There are several core fe
 These are empty tiles in space without anything special about them. Units and nodes can be placed/move onto these tiles.
 
 ### Asteroid Tiles
-Asteroid tiles are impassable tiles that block anything from moving/spawning onto them. These tiles might move around over time during the map in a symmetric fashion.
+Asteroid tiles are impassable tiles that block anything from moving/spawning onto them. These tiles might move around over time during the map in a symmetric fashion. Sometimes asteroid tiles might move on top of existing units. In the game the unit is not removed as a result of this and can still take actions and move around provided there is an non asteroid tile adjacent to it.
 
 ### Nebula Tiles
 Nebula tiles are passable tiles with a number of features. These tiles might move around over time during the map in a symmetric fashion.
 
 *Vision Reduction*: Nebula tiles can reduce/block vision of units. Because of vision reduction it is even possible for a unit to be unable to see itself while still being able to move! See [Vision](#vision) for more details on how team vision is determined. All nebula tiles have the same vision reduction value called `params.nebula_tile_vision_reduction` which is randomized from 0 to 3. 
+
+*Energy Reduction*: Nebula tiles can reduce the energy of units that end their turn on them. All nebula tiles have the same energy reduction value called `params.nebula_tile_energy_reduction`.
 
 ### Energy Nodes
 
@@ -127,13 +129,25 @@ The full set of game parameters can be found here in the codebase: https://githu
 
 ### Randomized Game Parameters / Map Generation
 
-There are a number of randomized game paramteres which can modify and even disable/enable certain game mechanics. None of these game parameters are changed between matches in a game. These parameters are also not given to the teams themselves and must be discovered through exploration.
+There are a number of randomized game paramteres which can modify and even disable/enable certain game mechanics. None of these game parameters are changed between matches in a game. The majority of these parameters are also not given to the teams themselves and must be discovered through exploration.
 
-- `params.unit_sap_amount` - 10 to 50
-- `params.unit_sap_range` - 3 to 8
-- `params.nebula_tile_vision_reduction` - 0 to 3
-- `params.unit_sensor_range` - 1 to 3
-- `params.unit_move_cost` - 1 to 5
+```python
+env_params_ranges = dict(
+    map_type=[1],
+    unit_move_cost=list(range(1, 6)), # list(range(x, y)) = [x, x+1, x+2, ... , y-1]
+    unit_sensor_range=list(range(2, 5)),
+    nebula_tile_vision_reduction=list(range(0,4)),
+    nebula_tile_energy_reduction=[0, 10, 100],
+    unit_sap_cost=list(range(30, 51)),
+    unit_sap_range=list(range(3, 8)),
+    unit_sap_dropoff_factor=[0.25, 0.5, 1],
+    unit_energy_void_factor=[0.0625, 0.125, 0.25, 0.375],
+    # map randomizations
+    nebula_tile_drift_speed=[-0.05, -0.025, 0, 0.025, 0.05],
+    energy_node_drift_speed=[0.01, 0.02, 0.03, 0.04, 0.05],
+    energy_node_drift_magnitude=list(range(3, 6))
+)
+```
 
 These parameter ranges (and other parameters) are subject to change in the beta phase of this competition as we gather feedback and data.
 
