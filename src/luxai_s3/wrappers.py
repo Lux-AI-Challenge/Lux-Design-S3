@@ -9,7 +9,7 @@ import gymnax
 import gymnax.environments.spaces
 import jax
 import numpy as np
-
+import dataclasses
 from luxai_s3.env import LuxAIS3Env
 from luxai_s3.params import EnvParams, env_params_ranges
 from luxai_s3.state import serialize_env_actions, serialize_env_states
@@ -70,7 +70,13 @@ class LuxAIS3GymEnv(gym.Env):
         obs, self.state = self.jax_env.reset(reset_key, params=params)
         if self.numpy_output:
             obs = to_numpy(flax.serialization.to_state_dict(obs))
-        return obs, dict(params=params, state=self.state)
+            
+        # only keep the following game parameters available to the agent
+        params_dict = dataclasses.asdict(params)
+        params_dict_kept = dict()
+        for k in ["max_units", "match_count_per_episode", "map_height", "map_width", "num_teams", "unit_move_cost", "unit_sap_cost", "unit_sap_range", "unit_sensor_range"]:
+            params_dict_kept[k] = params_dict[k]
+        return obs, dict(params=params_dict_kept, state=self.state)
     
     def step(self, action: Any) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         self.rng_key, step_key = jax.random.split(self.rng_key)

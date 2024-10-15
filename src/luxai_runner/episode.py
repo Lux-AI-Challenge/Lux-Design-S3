@@ -111,8 +111,8 @@ window.episode = {json.dumps(replay)};
 
         metadata = dict()
 
-        obs, _ = self.env.reset(seed=self.seed)
-        env_cfg = self.env.get_wrapper_attr("env_params")
+        obs, info = self.env.reset(seed=self.seed)
+        env_cfg = info["params"]
         # state_obs = self.env.get_compressed_obs()
         obs = to_json(obs)
 
@@ -131,7 +131,7 @@ window.episode = {json.dumps(replay)};
             dones[agent] = 0
             infos[agent] = dict(
                 # turn 0 provide configurations
-                env_cfg=dataclasses.asdict(env_cfg)
+                env_cfg=env_cfg
             )
 
         # if save_replay:
