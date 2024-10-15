@@ -21,9 +21,6 @@ def agent_fn(observation, configurations):
     remainingOverageTime = observation.remainingOverageTime
     if step == 0:
         agent_dict[player] = Agent(player, configurations["env_cfg"])
-    if step < 3 and player == "player_1":
-        with open(f"inputs_{step}.txt", "w") as f:
-            f.write(str(observation.__dict__))
     agent = agent_dict[player]
     actions = agent.act(step , from_json(observation.obs), remainingOverageTime)
     return dict(action=actions.tolist())
