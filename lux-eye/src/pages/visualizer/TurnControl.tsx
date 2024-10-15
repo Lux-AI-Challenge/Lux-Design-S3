@@ -248,6 +248,7 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
   const openJsonDataModal = useCallback(() => {
     modals.openModal({
       title: 'This Game\'s Parameters',
+      size: 'auto',
       children: (
         <pre>{JSON.stringify(episode.params, null, 2)}</pre>
       ),
