@@ -311,8 +311,8 @@ class LuxAIS3Env(environment.Environment):
             state = state.replace(units=state.units.replace(energy=jnp.where(team_0_unit_count < params.max_units, state.units.energy.at[0, team_0_new_unit_id, :].set(jnp.array([params.init_unit_energy], dtype=jnp.int16)), state.units.energy)))
             state = state.replace(units=state.units.replace(position=jnp.where(team_1_unit_count < params.max_units, state.units.position.at[1, team_1_new_unit_id, :].set(jnp.array([params.map_width - 1, params.map_height - 1], dtype=jnp.int16)), state.units.position)))
             state = state.replace(units=state.units.replace(energy=jnp.where(team_1_unit_count < params.max_units, state.units.energy.at[1, team_1_new_unit_id, :].set(jnp.array([params.init_unit_energy], dtype=jnp.int16)), state.units.energy)))
-            state = state.replace(units_mask=state.units_mask.at[0, team_0_new_unit_id].set(team_0_unit_count < params.max_units))
-            state = state.replace(units_mask=state.units_mask.at[1, team_1_new_unit_id].set(team_1_unit_count < params.max_units))
+            state = state.replace(units_mask=state.units_mask.at[0, team_0_new_unit_id].set(jnp.where(team_0_unit_count < params.max_units, True, state.units_mask[0, team_0_new_unit_id])))
+            state = state.replace(units_mask=state.units_mask.at[1, team_1_new_unit_id].set(jnp.where(team_1_unit_count < params.max_units, True, state.units_mask[1, team_1_new_unit_id])))
             # state = jnp.where(team_0_unit_count < params.max_units, spawn_unit(state, 0, team_0_new_unit_id, [0, 0], params), state)
             # state = jnp.where(team_1_unit_count < params.max_units, spawn_unit(state, 1, team_1_new_unit_id, [params.map_width - 1, params.map_height - 1], params), state)
             return state
