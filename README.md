@@ -29,3 +29,11 @@ luxai-s3 path/to/bot/main.py path/to/bot/main.py --output replay.json
 ```
 
 Then upload the replay.json to the online visualizer here: https://s3vis.lux-ai.org/ (a link on the lux-ai.org website will be up soon) 
+
+### Starter Kits
+
+Each supported programming language/solution type has its own starter kit.
+
+The kits folder in this repository holds all of the available starter kits you can use to start competing and building an AI agent. The readme shows you how to get started with your language of choice and run a match. We strongly recommend reading through the documentation for your language of choice in the links below
+
+- [Python](kits/python/README.md)
