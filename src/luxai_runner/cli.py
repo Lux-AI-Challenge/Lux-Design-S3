@@ -116,9 +116,10 @@ def main():
 
         stime = time.time()
         eps = Episode(cfg=cfg)
-        asyncio.run(eps.run())
+        results = asyncio.run(eps.run())
         etime = time.time()
-        print(etime - stime)
+        print("Time Elapsed: ", etime - stime)
+        print("Rewards: ", results.rewards)
 
 if __name__ == "__main__":
     main()

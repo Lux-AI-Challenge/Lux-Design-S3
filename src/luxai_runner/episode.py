@@ -31,6 +31,10 @@ class EpisodeConfig:
     save_replay_path: Optional[str] = None
     replay_options: ReplayConfig = field(default_factory=ReplayConfig)
 
+@dataclass
+class EpisodeResults:
+    rewards: dict[str, float]
+
 class Episode:
     def __init__(self, cfg: EpisodeConfig) -> None:
         self.cfg = cfg
@@ -190,6 +194,6 @@ window.episode = {json.dumps(replay)};
         for player in players.values():
             await player.proc.cleanup()
 
-        return rewards
+        return EpisodeResults(rewards=rewards)
     def close(self):
         pass
