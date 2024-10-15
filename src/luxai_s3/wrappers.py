@@ -76,7 +76,7 @@ class LuxAIS3GymEnv(gym.Env):
         params_dict_kept = dict()
         for k in ["max_units", "match_count_per_episode", "max_steps_in_match", "map_height", "map_width", "num_teams", "unit_move_cost", "unit_sap_cost", "unit_sap_range", "unit_sensor_range"]:
             params_dict_kept[k] = params_dict[k]
-        return obs, dict(params=params_dict_kept, state=self.state)
+        return obs, dict(params=params_dict_kept, full_params=params_dict, state=self.state)
     
     def step(self, action: Any) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         self.rng_key, step_key = jax.random.split(self.rng_key)
@@ -110,7 +110,7 @@ class RecordEpisode(gym.Wrapper):
         obs, info = self.env.reset(seed=seed, options=options)
         
         self.episode["metadata"]["seed"] = seed
-        self.episode["params"] = flax.serialization.to_state_dict(info["params"])
+        self.episode["params"] = flax.serialization.to_state_dict(info["full_params"])
         self.episode["states"].append(info["state"])
         return obs, info
     def step(self, action: Any) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:

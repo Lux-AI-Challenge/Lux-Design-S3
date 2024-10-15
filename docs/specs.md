@@ -153,4 +153,9 @@ These parameter ranges (and other parameters) are subject to change in the beta 
 
 ## Using the Visualizer
 
-The visualizer will display the state of the environment at time step `t` out of some max number indicated in the page under the map. Actions taken at timestep `t` will affect the state of the game and be reflected in the next timestep `t+1`.
+The [visualizer](https://s3vis.lux-ai.org/) will display the state of the environment at time step `t` out of some max number indicated in the page under the map. Actions taken at timestep `t` will affect the state of the game and be reflected in the next timestep `t+1`.
+
+There are also a few important keyboard shortcuts that can be used to toggle various visualizations, namely
+- `s`: Sensor range of all units
+- `e`: The current energy field of the map
+- `r`: The relic node tiles of the map
