@@ -24,45 +24,45 @@ Each game/episode consists of a sequence of matches. The very first observation 
 
 The game engine sends a raw JSON in the form of a string to each agent. When the JSON is parsed it has the following structure:
 
-```json
-# T is the number of teams (default is 2)
-# N is the max number of units per team
-# W, H are the width and height of the map
-# R is the max number of relic nodes
+```js
+// T is the number of teams (default is 2)
+// N is the max number of units per team
+// W, H are the width and height of the map
+// R is the max number of relic nodes
 {
   "obs": {
     "units": {
       "position": Array(T, N, 2),
       "energy": Array(T, N, 1)
     },
-    # whether the unit exists and is visible to you. units_mask[t][i] is whether team t's unit i can be seen and exists.
+    // whether the unit exists and is visible to you. units_mask[t][i] is whether team t's unit i can be seen and exists.
     "units_mask": Array(T, N),
-    # whether the tile is visible to the unit for that team
+    // whether the tile is visible to the unit for that team
     "sensor_mask": Array(W, H),
     "map_features": {
-        # amount of energy on the tile
+        // amount of energy on the tile
         "energy": Array(W, H),
-        # type of the tile. 0 is empty, 1 is a nebula tile, 2 is asteroid
+        // type of the tile. 0 is empty, 1 is a nebula tile, 2 is asteroid
         "tile_type": Array(W, H)
     },
-    # whether the relic node exists and is visible to you.
+    // whether the relic node exists and is visible to you.
     "relic_nodes_mask": Array(R),
-    # position of the relic nodes.
+    // position of the relic nodes.
     "relic_nodes": Array(R, 2),
-    # points scored by each team in the current match
+    // points scored by each team in the current match
     "team_points": Array(T),
-    # number of wins each team has in the current game/episode
+    // number of wins each team has in the current game/episode
     "team_wins": Array(T),
-    # number of steps taken in the current game/episode
+    // number of steps taken in the current game/episode
     "steps": int,
-    # number of steps taken in the current match
+    // number of steps taken in the current match
     "match_steps": int
   },
-  # number of steps taken in the current game/episode
-  "remainingOverageTime": int, # total amount of time your bot can use whenever it exceeds 2s in a turn
-  "player": str, # your player id
+  // number of steps taken in the current game/episode
+  "remainingOverageTime": int, // total amount of time your bot can use whenever it exceeds 2s in a turn
+  "player": str, // your player id
   "info": {
-    "env_cfg": dict # some of the game's visible parameters
+    "env_cfg": dict // some of the game's visible parameters
   }
 }
 ```
