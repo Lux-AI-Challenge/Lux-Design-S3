@@ -354,7 +354,7 @@ class LuxAIS3Env(environment.Environment):
         winner_by_energy = jnp.sum(state.units.energy[..., 0] * state.units_mask, axis=1)
         winner_by_energy = jnp.where(winner_by_energy.max() > winner_by_energy.min(), jnp.argmax(winner_by_energy), -1)
 
-        winner = jnp.where(winner_by_points != -1, winner_by_points, jnp.where(winner_by_energy != -1, winner_by_energy, jax.random.randint(key, shape=(), minval=0, maxval=params.num_teams + 1)))
+        winner = jnp.where(winner_by_points != -1, winner_by_points, jnp.where(winner_by_energy != -1, winner_by_energy, jax.random.randint(key, shape=(), minval=0, maxval=params.num_teams)))
         match_ended = state.match_steps >= params.max_steps_in_match
         
         state = state.replace(match_steps=jnp.where(match_ended, -1, state.match_steps), team_points=jnp.where(match_ended, jnp.zeros_like(state.team_points), state.team_points), team_wins=jnp.where(match_ended, state.team_wins.at[winner].add(1), state.team_wins))
