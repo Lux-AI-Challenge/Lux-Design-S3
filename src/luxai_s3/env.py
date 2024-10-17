@@ -196,6 +196,7 @@ class LuxAIS3Env(environment.Environment):
                 other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
                 team_sap_action_deltas = sap_action_deltas[t] # (max_units, 2)
                 team_sap_action_mask = sap_action_mask[t]
+                other_team_unit_mask = units_mask[other_team_ids] # (other_teams, max_units)
                 team_sapped_positions = all_units.position[t] + team_sap_action_deltas # (max_units, 2)
                 # whether the unit is really sapping or not (needs to exist, have enough energy, and a valid sap action)
                 team_unit_sapped = units_mask[t] & team_sap_action_mask & (current_energy[t, 0] >= params.unit_sap_cost) & (jnp.max(jnp.abs(team_sap_action_deltas), axis=-1) <= params.unit_sap_range) # (max_units)
@@ -205,7 +206,7 @@ class LuxAIS3Env(environment.Environment):
                 # remove unit_sap_cost energy from opposition units that were in the middle of a sap action.
                 all_units = all_units.replace(
                     energy=all_units.energy.at[other_team_ids].set(
-                        jnp.where(other_units_sapped_count[:, :, None] > 0, 
+                        jnp.where(team_unit_sapped[None, :, None] & other_team_unit_mask[:, :, None] & (other_units_sapped_count[:, :, None] > 0), 
                             all_units.energy[other_team_ids] - params.unit_sap_cost * other_units_sapped_count[:, :, None], 
                             all_units.energy[other_team_ids]
                         )
@@ -220,7 +221,7 @@ class LuxAIS3Env(environment.Environment):
                 other_units_adjacent_sapped_count = jnp.sum(jnp.all(all_units.position[other_team_ids][:, :, None] == team_sapped_adjacent_positions[None], axis=-1), axis=-1, dtype=jnp.int16) # (len(other_team_ids), max_units)
                 all_units = all_units.replace(
                     energy=all_units.energy.at[other_team_ids].set(
-                        jnp.where(other_units_adjacent_sapped_count[:, :, None] > 0, 
+                        jnp.where(team_unit_sapped[None, :, None] & other_team_unit_mask[:, :, None] & (other_units_adjacent_sapped_count[:, :, None] > 0), 
                             all_units.energy[other_team_ids] - jnp.array(params.unit_sap_cost * params.unit_sap_dropoff_factor * other_units_adjacent_sapped_count[:, :, None], dtype=jnp.int16), 
                             all_units.energy[other_team_ids]
                         )
@@ -255,7 +256,7 @@ class LuxAIS3Env(environment.Environment):
             agg_energy_void_map, agg_energy_map = jax.lax.scan(scan_body, (unit_aggregate_energy_void_map[t], unit_aggregate_energy_map[t]), (original_unit_energy[t], state.units.position[t], state.units_mask[t]))[0]
             unit_aggregate_energy_void_map = unit_aggregate_energy_void_map.at[t].add(agg_energy_void_map)
             unit_aggregate_energy_map = unit_aggregate_energy_map.at[t].add(agg_energy_map)
-            
+
         # resolve collisions and keep only the surviving units
         for t in range(params.num_teams):
             other_team_ids = jnp.array([t2 for t2 in range(params.num_teams) if t2 != t])
@@ -276,7 +277,7 @@ class LuxAIS3Env(environment.Environment):
             # unit on team t loses energy to void field equal to params.unit_energy_void_factor * void_energy / num units stacked with unit on the same tile
             team_unit_energy = state.units.energy[t] - jnp.floor(jax.vmap(lambda unit_position: params.unit_energy_void_factor * oppposition_energy_void_map[unit_position[0], unit_position[1]] / unit_counts_map[t][unit_position[0], unit_position[1]])(state.units.position[t])[..., None]).astype(jnp.int16)
             state = state.replace(units=state.units.replace(energy=state.units.energy.at[t].set(team_unit_energy)))            
-        
+
         """apply energy field to the units"""
         # Update unit energy based on the energy field and nebula tileof their current position
         def update_unit_energy(unit: UnitState, mask):
