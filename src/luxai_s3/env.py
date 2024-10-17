@@ -199,7 +199,7 @@ class LuxAIS3Env(environment.Environment):
                 other_team_unit_mask = units_mask[other_team_ids] # (other_teams, max_units)
                 team_sapped_positions = all_units.position[t] + team_sap_action_deltas # (max_units, 2)
                 # whether the unit is really sapping or not (needs to exist, have enough energy, and a valid sap action)
-                team_unit_sapped = units_mask[t] & team_sap_action_mask & (current_energy[t, 0] >= params.unit_sap_cost) & (jnp.max(jnp.abs(team_sap_action_deltas), axis=-1) <= params.unit_sap_range) # (max_units)
+                team_unit_sapped = units_mask[t] & team_sap_action_mask & (current_energy[t, :, 0] >= params.unit_sap_cost) & (jnp.max(jnp.abs(team_sap_action_deltas), axis=-1) <= params.unit_sap_range) # (max_units)
                 team_unit_sapped = team_unit_sapped & (team_sapped_positions >= 0).all(-1) & (team_sapped_positions[:, 0] < params.map_width) & (team_sapped_positions[:, 1] < params.map_height)
                 # the number of times other units are sapped
                 other_units_sapped_count = jnp.sum(jnp.all(all_units.position[other_team_ids][:, :, None] == team_sapped_positions[None], axis=-1), axis=-1, dtype=jnp.int16) # (len(other_team_ids), max_units)
