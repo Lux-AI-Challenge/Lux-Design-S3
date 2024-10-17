@@ -1,4 +1,4 @@
-# Lux AI Challenge Season 2 Contributing Guide
+# Lux AI Challenge Season 3 Contributing Guide
 
 If you find a bug or have a feature request, please open an issue [here](https://github.com/Lux-AI-Challenge/Lux-Design-S3/issues) or let us know on our discord, the forums etc.
 
@@ -11,7 +11,7 @@ And of course, please be aware of and read the [Code Of Conduct](https://github.
 For development, we recommend using conda to setup your python environment. Once you have conda (or the faster mamba), clone this repository and setup the environment
 
 ```
-git clone https://github.com/Lux-AI-Challenge/Lux-Design-S2.git
+git clone https://github.com/Lux-AI-Challenge/Lux-Design-S3.git
 conda create -n "lux-s3" "python==3.11"
 pip install -e src/
 ```
@@ -25,11 +25,11 @@ This repository is organized as follows
 
 ## Contributing Starter Kits
 
-If you are interested in contributing a starter kit for a language that is not currently supported, please post an issue about it on our [issue tracker](https://github.com/Lux-AI-Challenge/Lux-Design-S2/issues) so that people do not accidentally do the same things.
+If you are interested in contributing a starter kit for a language that is not currently supported, please post an issue about it on our [issue tracker](https://github.com/Lux-AI-Challenge/Lux-Design-S3/issues) so that people do not accidentally do the same things.
 
 Here are a few things to be aware of. The competition servers currently run on Ubuntu 18.04, and has Python, NodeJS, and Java installed on the system, along with a whole ton of other Python packages. Hence, any language that can compile to machine code / binaries on Ubuntu 18.04 can be easily added to the competition.
 
-If you want to get started, we recommend copying the structure of the folder `kits/cpp` or `kits/python`. We require you to provide a README similar to the other kit readmes, along with documentation on how to get started compiling code (if necessary), then running a match using the compiled code. To help understand what the raw data given by the engine are, see https://github.com/Lux-AI-Challenge/Lux-Design-S2/blob/main/kits/sample_env_cfg.json and https://github.com/Lux-AI-Challenge/Lux-Design-S2/blob/main/kits/sample_obs.json
+If you want to get started, we recommend copying the structure of the folder `kits/python`. We require you to provide a README similar to the other kit readmes, along with documentation on how to get started compiling code (if necessary), then running a match using the compiled code. 
 
 Moreover, for compiled languages, we recommend also copying over the `create_submission.sh` script and `Dockerfile` in `kits/cpp/` if the language's compiled binaries are OS dependent. For example, for the C++ kit, the dockerfile is used to compile the C++ agent code on Ubuntu 18.04 so then that code can be submitted to the competition servers.
 

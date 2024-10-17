@@ -71,3 +71,5 @@ Numbers are filled with -1 if the information is not visible to you. This includ
 Moreover, all map sized arrays with shape (W, H) are accessed by the convention of `array[x][y]` where `x` is along the width, and `y` is along the height of the map.
 
 Game parameters are given to agents but not all are visible to the agent. The only ones visible are map_width, map_height, max_steps_in_match, match_count_per_episode, unit_move_cost, unit_sap_cost, unit_sap_range. The rest will have to be inferred by your agent.
+
+Example of what the observation JSON string looks like when parsed as JSON is in the sample_step_0_input.txt and sample_step_input.txt files in this folder.
