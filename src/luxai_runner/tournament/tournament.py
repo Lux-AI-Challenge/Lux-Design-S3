@@ -121,12 +121,12 @@ class Tournament:
 
     async def _run_episode(self, players: Dict[str, Player], eps_cfg: EpisodeConfig):
         eps = Episode(cfg=eps_cfg)
-        rewards = await eps.run()
+        results = await eps.run()
         # TODO: there is probably some race condition here, but in long run it's not important
         self.ranking_sys.update(
             players["player_0"].rank,
             players["player_1"].rank,
-            rewards["player_0"],
-            rewards["player_1"],
+            results.rewards["player_0"],
+            results.rewards["player_1"],
         )
         eps.close()
