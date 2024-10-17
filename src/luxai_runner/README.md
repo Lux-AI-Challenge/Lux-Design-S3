@@ -6,7 +6,7 @@ To run a match between two agents, run
 luxai-s3 path/to/main.py path/to_another/main.py -o replay.json
 ```
 
-which saves a replay file to `replay.json` which can be watched at https://s2vis.lux-ai.org. You can also specify `-o replay.html` which lets you open the visualizer directly and auto load the replay.
+which saves a replay file to `replay.json` which can be watched at https://s3vis.lux-ai.org. You can also specify `-o replay.html` which lets you open the visualizer directly and auto load the replay.
 
 For additional help run `luxai-s3 --help`
 
