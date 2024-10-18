@@ -58,9 +58,7 @@ function parseRobotAction(params: EnvParams, robotPosition: Tile, data: any): Ro
 }
 
 export function isLuxAISEpisode(data: any): boolean {
-  // TODO: check this
-  return typeof data === 'object';
-  // return typeof data === 'object' && data.observations !== undefined && data.actions !== undefined;
+  return typeof data === 'object' && data.observations !== undefined && data.actions !== undefined;
 }
 
 export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = {}): Episode {
@@ -154,7 +152,7 @@ export function parseLuxAISEpisode(data: any, extra: Partial<EpisodeMetadata> = 
 }
 
 export function getMatchIdx(step: number, envParams: EnvParams): number {
-  return Math.floor(step / envParams.max_steps_in_match);
+  return Math.floor((step-1) / (envParams.max_steps_in_match + 1));
 }
 
 export function parseTileType(tileType: number): string {

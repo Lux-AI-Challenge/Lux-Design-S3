@@ -1,5 +1,5 @@
 import { parseLuxAISEpisode } from './luxai';
-import { Episode, EpisodeMetadata } from './model';
+import { EnvParams, Episode, EpisodeMetadata } from './model';
 
 export function isKaggleEnvironmentsEpisode(data: any): boolean {
   return typeof data === 'object' && data.steps !== undefined;
@@ -8,7 +8,6 @@ export function isKaggleEnvironmentsEpisode(data: any): boolean {
 export function parseKaggleEnvironmentsEpisode(data: any): Episode {
   const observations = [];
   const actions = [];
-
   const extra: Partial<EpisodeMetadata> = {};
   if (typeof data.info === 'object' && data.info.TeamNames !== undefined) {
     extra.teamNames = data.info.TeamNames;
@@ -16,18 +15,20 @@ export function parseKaggleEnvironmentsEpisode(data: any): Episode {
   if (typeof data.configuration == 'object' && data.configuration.seed !== undefined) {
     extra.seed = data.configuration.seed;
   }
-
+  let params: Partial<EnvParams> = {}
   for (const step of data.steps) {
-    const obs = JSON.parse(step[0].observation.obs);
+    if (step[0].info.replay) {
+      const obs = step[0].info.replay.observations[0]
 
-    observations.push(obs);
-    actions.push({
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      player_0: step[0].action,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      player_1: step[1].action,
-    });
+      observations.push(obs);
+      if (step[0].info.replay.actions) {
+        actions.push(step[0].info.replay.actions[0])
+      }
+      if (step[0].info.replay.params) {
+        params = step[0].info.replay.params
+      }
   }
+}
 
-  return parseLuxAISEpisode({ observations, actions }, extra);
+  return parseLuxAISEpisode({ observations, actions, params }, extra);
 }
