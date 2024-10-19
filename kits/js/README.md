@@ -6,7 +6,7 @@ Make sure to check our [Discord](https://discord.gg/aWJt3UAcgn) for announcement
 <!--  or the [Kaggle forums](https://www.kaggle.com/c/lux-ai-season2/discussion)  -->
 ## Requirements
 
-You will need Node 18 or higher installed.
+You will need Node 18 or higher installed. You can install Node using [nvm](https://github.com/nvm-sh/nvm).
 
 ## Getting Started
 
@@ -26,8 +26,6 @@ This will run the `agent.js` code in the same folder as `main.py` and generate a
 Now that you have the code up and running, you are ready to start programming and having some fun!
 
 If you haven't read it already, take a look at the [design specifications for the competition](../../docs/specs.md). This will go through the rules and objectives of the competition. 
-
-<!-- For a in-depth tutorial, we provide a jupyter notebook both [locally](https://github.com/Lux-AI-Challenge/Lux-Design-S2/blob/main/kits/python/lux-ai-challenge-season-2-tutorial-python.ipynb) and on [Kaggle](https://www.kaggle.com/code/stonet2000/lux-ai-challenge-season-2-tutorial-python) -->
 
 All of our kits follow a common API through which you can use to access various functions and properties that will help you develop your strategy and bot. The markdown version is here: https://github.com/Lux-AI-Challenge/Lux-Design-S3/blob/main/kits/README.md, which also describes the observation and action structure/spaces.
 
