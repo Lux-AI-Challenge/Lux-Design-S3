@@ -37,6 +37,7 @@ Each supported programming language/solution type has its own starter kit.
 The kits folder in this repository holds all of the available starter kits you can use to start competing and building an AI agent. The readme shows you how to get started with your language of choice and run a match. We strongly recommend reading through the documentation for your language of choice in the links below
 
 - [Python](kits/python/README.md)
+- [JS](kits/js/README.md)
 
 
 ## Core Contributors
