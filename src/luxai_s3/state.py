@@ -287,6 +287,8 @@ def gen_map(key: chex.PRNGKey, params: EnvParams) -> chex.Array:
         map_features = map_features.replace(tile_type=jnp.where(noise, NEBULA_TILE, 0))
         
         ### Generate asteroid tiles ###
+        key, subkey = jax.random.split(key)
+        perlin_noise = generate_perlin_noise_2d(subkey, (params.map_height, params.map_width), (8, 8))
         noise = jnp.where(perlin_noise < -0.5, 1, 0)
         # mirror along diagonal
         noise = noise | noise.T
