@@ -340,7 +340,7 @@ class LuxAIS3Env(environment.Environment):
         
         # Compute relic scores
         def team_relic_score(unit_counts_map):
-            scores = (unit_counts_map > 0) & state.relic_nodes_map_weights
+            scores = (unit_counts_map > 0) & (state.relic_nodes_map_weights > 0)
             return jnp.sum(scores, dtype=jnp.int32)
         
         # note we need to recompue unit counts since units can get removed due to collisions
