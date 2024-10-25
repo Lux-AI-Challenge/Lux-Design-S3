@@ -426,7 +426,7 @@ class LuxAIS3Env(environment.Environment):
             info[f"player_{k}"] = dict()
         return obs, state, reward, terminated_dict, truncated_dict, info
 
-    @functools.partial(jax.jit, static_argnums=(0, 2))
+    @functools.partial(jax.jit, static_argnums=(0, ))
     def reset(
         self, key: chex.PRNGKey, params: Optional[EnvParams] = None
     ) -> Tuple[chex.Array, EnvState]:
