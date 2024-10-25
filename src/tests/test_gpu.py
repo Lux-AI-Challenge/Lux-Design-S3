@@ -4,6 +4,7 @@ import flax.serialization
 from luxai_s3.params import EnvParams
 from luxai_s3.env import LuxAIS3Env
 from luxai_s3.params import env_params_ranges
+from luxai_s3.state import gen_map
 from luxai_s3.wrappers import LuxAIS3GymEnv, RecordEpisode
 if __name__ == "__main__":
     import numpy as np
@@ -25,7 +26,8 @@ if __name__ == "__main__":
     
     rng_key, subkey = jax.random.split(rng_key)
     env_params = jax.vmap(sample_params)(jax.random.split(subkey, num_envs))
-    reset_fn(jax.random.split(subkey, num_envs), env_params)
+    # reset_fn(jax.random.split(subkey, num_envs), env_params)
+    jax.vmap(gen_map)(jax.random.split(subkey, num_envs), env_params)
 
 
     
