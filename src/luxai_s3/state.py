@@ -198,7 +198,7 @@ def gen_state(key: chex.PRNGKey, env_params: EnvParams, max_units: int, num_team
                 )
                 relic_nodes_map_weights = jnp.where(
                     valid_pos & mask,
-                    relic_nodes_map_weights.at[x, y].add(relic_node_config[dx, dy]),
+                    relic_nodes_map_weights.at[x, y].add(relic_node_config[dx, dy].astype(jnp.int16)),
                     relic_nodes_map_weights,
                 )
         return relic_nodes_map_weights, None
@@ -287,8 +287,7 @@ def gen_map(key: chex.PRNGKey, params: EnvParams, map_type: int, map_height: int
                 ),
                 minval=0,
                 maxval=10,
-                dtype=jnp.int16,
-            )
+            ).astype(jnp.float32)
             >= 7.5
         )
         highest_positions = highest_positions.astype(jnp.int16)
@@ -310,7 +309,7 @@ def gen_map(key: chex.PRNGKey, params: EnvParams, map_type: int, map_height: int
         noise = generate_perlin_noise_2d(subkey, (map_height, map_width), (4, 4))
         # Find the positions of the  highest noise values
         flat_indices = jnp.argsort(noise.ravel())[-max_energy_nodes // 2:]  # Get indices of highest values
-        highest_positions = jnp.column_stack(jnp.unravel_index(flat_indices, noise.shape))
+        highest_positions = jnp.column_stack(jnp.unravel_index(flat_indices, noise.shape)).astype(jnp.int16)
         mirrored_positions = jnp.stack([map_width - highest_positions[:, 1] - 1, map_height - highest_positions[:, 0] - 1], dtype=jnp.int16, axis=-1)
         energy_nodes = jnp.concat([highest_positions, mirrored_positions], axis=0)
         key, subkey = jax.random.split(key)
