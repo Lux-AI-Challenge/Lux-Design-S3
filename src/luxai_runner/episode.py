@@ -31,9 +31,11 @@ class EpisodeConfig:
     save_replay_path: Optional[str] = None
     replay_options: ReplayConfig = field(default_factory=ReplayConfig)
 
+
 @dataclass
 class EpisodeResults:
     rewards: dict[str, float]
+
 
 class Episode:
     def __init__(self, cfg: EpisodeConfig) -> None:
@@ -135,11 +137,11 @@ window.episode = {json.dumps(replay)};
             )
 
         # if save_replay:
-            # replay = dict(observations=[], actions=[], dones=[], rewards=[])
-            # if self.cfg.replay_options.compressed_obs:
-            #     replay["observations"].append(state_obs)
-            # else:
-            #     replay["observations"].append(self.env.state.get_obs())
+        # replay = dict(observations=[], actions=[], dones=[], rewards=[])
+        # if self.cfg.replay_options.compressed_obs:
+        #     replay["observations"].append(state_obs)
+        # else:
+        #     replay["observations"].append(self.env.state.get_obs())
 
         i = 0
         while not game_done:
@@ -149,7 +151,10 @@ window.episode = {json.dumps(replay)};
             action_coros = []
             for player in players.values():
                 action = player.step(
-                    obs=obs[player.agent], step=i, reward=rewards[player.agent], info=infos[player.agent]
+                    obs=obs[player.agent],
+                    step=i,
+                    reward=rewards[player.agent],
+                    info=infos[player.agent],
                 )
                 action_coros += [action]
                 agent_ids += [player.agent]
@@ -166,7 +171,9 @@ window.episode = {json.dumps(replay)};
                         else:
                             print(f"{agent_id} sent a invalid action {action}")
                     actions[agent_id] = None
-            new_state_obs, rewards, terminations, truncations, infos = self.env.step(actions)
+            new_state_obs, rewards, terminations, truncations, infos = self.env.step(
+                actions
+            )
             i += 1
             # TODO (stao): hard code to avoid using jax structs in the infos and sending those.
             infos = dict(player_0=dict(), player_1=dict())
@@ -195,5 +202,6 @@ window.episode = {json.dumps(replay)};
             await player.proc.cleanup()
 
         return EpisodeResults(rewards=rewards)
+
     def close(self):
         pass
