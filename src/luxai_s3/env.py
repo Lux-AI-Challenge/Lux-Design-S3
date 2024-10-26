@@ -121,7 +121,6 @@ class LuxAIS3Env(environment.Environment):
         )
 
         # Update sensor mask based on the sensor range
-        max_sensor_range = env_params_ranges["unit_sensor_range"][-1]
         def update_vision_power_map(unit_pos, vision_power_map):
             x, y = unit_pos
             existing_vision_power = jax.lax.dynamic_slice(
