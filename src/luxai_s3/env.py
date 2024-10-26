@@ -109,7 +109,8 @@ class LuxAIS3Env(environment.Environment):
         Now any time the vision power map has value > 0, the team can sense the tile. This forms the sensor mask
         """
 
-        vision_power_map_padding = self.fixed_env_params.unit_sensor_range
+        max_sensor_range = env_params_ranges["unit_sensor_range"][-1]
+        vision_power_map_padding = max_sensor_range
         vision_power_map = jnp.zeros(
             shape=(
                 self.fixed_env_params.num_teams,
