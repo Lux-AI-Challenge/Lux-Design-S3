@@ -116,17 +116,17 @@ class Profiler:
                 avg_stats[k].append(v)
         stats = {k: {"avg": np.mean(v), "std": np.std(v) if len(v) > 1 else None} for k, v in avg_stats.items()}
         self.log(
-            f"{name} ({len(stats)} trials)"
+            f"{name} ({len(self.stats[name])} trials)"
         )
         self.log(
-            f"{stats['fps']['avg']:0.3f} steps/s, {stats['psps']['avg']:0.3f} parallel steps/s, {stats['total_steps']['avg']} steps in {stats['dt']['avg']:0.3f}s"
+            f"AVG: {stats['fps']['avg']:0.3f} steps/s, {stats['psps']['avg']:0.3f} parallel steps/s, {stats['total_steps']['avg']} steps in {stats['dt']['avg']:0.3f}s"
         )
         if more_than_one_trial:
             self.log(
-                f"{stats['fps']['std']:0.3f} steps/s, {stats['psps']['std']:0.3f} parallel steps/s, {stats['total_steps']['std']} steps in {stats['dt']['std']:0.3f}s"
+                f"STD: {stats['fps']['std']:0.3f} steps/s, {stats['psps']['std']:0.3f} parallel steps/s, {stats['total_steps']['std']} steps in {stats['dt']['std']:0.3f}s"
             )
         self.log(
-            f"{' ' * 4}CPU mem: {avg_stats['cpu_mem_use'] / (1024**2):0.3f} MB, GPU mem: {avg_stats['gpu_mem_use'] / (1024**2):0.3f} MB"
+            f"{' ' * 4}CPU mem: {stats['cpu_mem_use']['avg'] / (1024**2):0.3f} MB, GPU mem: {stats['gpu_mem_use']['avg'] / (1024**2):0.3f} MB"
         )
 
     def get_current_process_gpu_memory(self):
