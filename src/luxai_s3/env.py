@@ -136,7 +136,7 @@ class LuxAIS3Env(environment.Environment):
             )
             update = jnp.zeros_like(existing_vision_power)
             for i in range(max_sensor_range + 1):
-                val = jnp.where(i > max_sensor_range - params.unit_sensor_range, i + 1 - params.unit_sensor_range, 0).astype(jnp.int16)
+                val = jnp.where(i > max_sensor_range - params.unit_sensor_range - 1, i + 1 - params.unit_sensor_range, 0).astype(jnp.int16)
                 update = update.at[
                     i : max_sensor_range * 2 + 1 - i,
                     i : max_sensor_range * 2 + 1 - i,
