@@ -2,7 +2,7 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Annotated, Dict, List
 
 import numpy as np
 from luxai_runner.bot import Bot
@@ -30,7 +30,7 @@ class Args:
     """Paths to player modules. If --tournament is passed as well, you can also pass a folder and we will look through all sub-folders for valid agents with main.py files (only works for python agents at the moment)."""
     len: Optional[int] = 1000
     """Max episode length"""
-    output: Optional[str] = None
+    output: Annotated[Optional[str], tyro.conf.arg(aliases=["-o"])] = None
     """Where to output replays. Default is none and no replay is generated"""
     replay: ReplayConfig = field(default_factory=lambda: ReplayConfig())
 

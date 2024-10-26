@@ -1,4 +1,5 @@
 from flax import struct
+import jax
 
 MAP_TYPES = ["dev0", "random"]
 

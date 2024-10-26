@@ -41,13 +41,13 @@ class LuxAIS3Env(environment.Environment):
     def compute_unit_counts_map(self, state: EnvState, params: EnvParams):
         # map of total units per team on each tile, shape (num_teams, map_width, map_height)
         unit_counts_map = jnp.zeros(
-            (self.fixed_env_params.num_teams, self.fixed_env_params.map_width, self.fixed_env_params.map_height), dtype=jnp.int32
+            (self.fixed_env_params.num_teams, self.fixed_env_params.map_width, self.fixed_env_params.map_height), dtype=jnp.int16
         )
 
         def update_unit_counts_map(unit_position, unit_mask, unit_counts_map):
             unit_counts_map = unit_counts_map.at[
                 unit_position[0], unit_position[1]
-            ].add(unit_mask)
+            ].add(unit_mask.astype(jnp.int16))
             return unit_counts_map
 
         for t in range(self.fixed_env_params.num_teams):
@@ -57,6 +57,7 @@ class LuxAIS3Env(environment.Environment):
                         state.units.position[t], state.units_mask[t], unit_counts_map[t]
                     ),
                     axis=0,
+                    dtype=jnp.int16
                 )
             )
         return unit_counts_map
@@ -182,11 +183,10 @@ class LuxAIS3Env(environment.Environment):
             vision_power_map_padding:-vision_power_map_padding,
             vision_power_map_padding:-vision_power_map_padding,
         ]
-
         # handle nebula tiles
         vision_power_map = (
             vision_power_map
-            - (state.map_features.tile_type == NEBULA_TILE)
+            - (state.map_features.tile_type == NEBULA_TILE).astype(jnp.int16)
             * params.nebula_tile_vision_reduction
         )
 
@@ -354,7 +354,7 @@ class LuxAIS3Env(environment.Environment):
                         [1, -1],
                         [1, 0],
                         [1, 1],
-                    ]
+                    ], dtype=jnp.int16
                 )
                 team_sapped_adjacent_positions = (
                     team_sapped_positions[:, None, :] + adjacent_offsets
@@ -376,9 +376,9 @@ class LuxAIS3Env(environment.Environment):
                             & (other_units_adjacent_sapped_count[:, :, None] > 0),
                             all_units.energy[other_team_ids]
                             - jnp.array(
-                                params.unit_sap_cost
+                                params.unit_sap_cost.astype(jnp.float32)
                                 * params.unit_sap_dropoff_factor
-                                * other_units_adjacent_sapped_count[:, :, None],
+                                * other_units_adjacent_sapped_count[:, :, None].astype(jnp.float32),
                                 dtype=jnp.int16,
                             ),
                             all_units.energy[other_team_ids],
@@ -413,13 +413,12 @@ class LuxAIS3Env(environment.Environment):
         # compute energy void fields for all teams and the energy + unit counts
         unit_aggregate_energy_void_map = jnp.zeros(
             shape=(self.fixed_env_params.num_teams, self.fixed_env_params.map_width, self.fixed_env_params.map_height),
-            dtype=jnp.float32,
+            dtype=jnp.int16,
         )
         unit_counts_map = self.compute_unit_counts_map(state, params)
-        # TODO (stao): this doesn't need to be a float?
         unit_aggregate_energy_map = jnp.zeros(
             shape=(self.fixed_env_params.num_teams, self.fixed_env_params.map_width, self.fixed_env_params.map_height),
-            dtype=jnp.float32,
+            dtype=jnp.int16,
         )
         for t in range(self.fixed_env_params.num_teams):
 
@@ -428,9 +427,9 @@ class LuxAIS3Env(environment.Environment):
                 unit_energy, unit_position, unit_mask = x
                 agg_energy_map = agg_energy_map.at[
                     unit_position[0], unit_position[1]
-                ].add(unit_energy[0] * unit_mask)
+                ].add(unit_energy[0] * unit_mask.astype(jnp.int16))
                 for deltas in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    new_pos = unit_position + jnp.array(deltas)
+                    new_pos = unit_position + jnp.array(deltas, dtype=jnp.int16)
                     in_map = (
                         (new_pos[0] >= 0)
                         & (new_pos[0] < self.fixed_env_params.map_width)
@@ -439,7 +438,7 @@ class LuxAIS3Env(environment.Environment):
                     )
                     agg_energy_void_map = agg_energy_void_map.at[
                         new_pos[0], new_pos[1]
-                    ].add(unit_energy[0] * unit_mask * in_map)
+                    ].add(unit_energy[0] * unit_mask.astype(jnp.int16) * in_map.astype(jnp.int16))
                 return (agg_energy_void_map, agg_energy_map), None
 
             agg_energy_void_map, agg_energy_map = jax.lax.scan(
@@ -498,8 +497,8 @@ class LuxAIS3Env(environment.Environment):
             team_unit_energy = state.units.energy[t] - jnp.floor(
                 jax.vmap(
                     lambda unit_position: params.unit_energy_void_factor
-                    * oppposition_energy_void_map[unit_position[0], unit_position[1]]
-                    / unit_counts_map[t][unit_position[0], unit_position[1]]
+                    * oppposition_energy_void_map[unit_position[0], unit_position[1]].astype(jnp.float32)
+                    / unit_counts_map[t][unit_position[0], unit_position[1]].astype(jnp.float32)
                 )(state.units.position[t])[..., None]
             ).astype(jnp.int16)
             state = state.replace(
@@ -515,7 +514,7 @@ class LuxAIS3Env(environment.Environment):
             x, y = unit.position
             energy_gain = (
                 state.map_features.energy[x, y]
-                - (state.map_features.tile_type[x, y] == NEBULA_TILE)
+                - (state.map_features.tile_type[x, y] == NEBULA_TILE).astype(jnp.int16)
                 * params.nebula_tile_energy_reduction
             )
             # if energy gain is less than 0
@@ -665,8 +664,8 @@ class LuxAIS3Env(environment.Environment):
         )
         new_energy_nodes = jnp.clip(
             state.energy_nodes + energy_node_deltas,
-            min=jnp.array([0, 0]),
-            max=jnp.array([self.fixed_env_params.map_width, self.fixed_env_params.map_height]),
+            min=jnp.array([0, 0], dtype=jnp.int16),
+            max=jnp.array([self.fixed_env_params.map_width, self.fixed_env_params.map_height], dtype=jnp.int16),
         )
         new_energy_nodes = jnp.where(
             state.steps * params.energy_node_drift_speed % 1 == 0,
@@ -697,7 +696,7 @@ class LuxAIS3Env(environment.Environment):
             -1,
         )
         winner_by_energy = jnp.sum(
-            state.units.energy[..., 0] * state.units_mask, axis=1
+            state.units.energy[..., 0] * state.units_mask.astype(jnp.int16), axis=1
         )
         winner_by_energy = jnp.where(
             winner_by_energy.max() > winner_by_energy.min(),
@@ -784,19 +783,24 @@ class LuxAIS3Env(environment.Environment):
         )
         info["final_state"] = state_st
         info["final_observation"] = obs_st
+        done = terminated | truncated
+        
         if self.auto_reset:
-            done = terminated | truncated
             obs_re, state_re = self.reset_env(key_reset, params)
-            # state = jax.tree_map(
-            #     lambda x, y: jax.lax.select(done, x, y), state_re, state_st
-            # )
-            obs = obs_st
-            # obs = jax.lax.select(done, obs_re, obs_st)
+            # Use lax.cond to efficiently choose between obs_re and obs_st
+            obs = jax.lax.cond(
+                done,
+                lambda: obs_re,
+                lambda: obs_st
+            )
+            state = jax.lax.cond(
+                done,
+                lambda: state_re,
+                lambda: state_st
+            )
         else:
             obs = obs_st
             state = state_st
-        # Auto-reset environment based on done
-        done = terminated | truncated
 
         # all agents terminate/truncate at same time
         terminated_dict = dict()
@@ -881,11 +885,11 @@ class LuxAIS3Env(environment.Environment):
                 relic_nodes_mask=new_relic_nodes_mask,
             )
             obs[f"player_{t}"] = team_obs
-        return 3
+        return obs
 
-    @functools.partial(jax.jit, static_argnums=(0, 2))
+    @functools.partial(jax.jit, static_argnums=(0, ))
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
-        """Check whether state is terminal. This occurs when either team wins/loses outright."""
+        """Check whether state is terminal. This never occurs. Game is only done when the time limit is reached."""
         terminated = jnp.array(False)
         return terminated
 
@@ -914,3 +918,5 @@ class LuxAIS3Env(environment.Environment):
     def state_space(self, params: EnvParams):
         """State space of the environment."""
         return spaces.Discrete(10)
+
+
