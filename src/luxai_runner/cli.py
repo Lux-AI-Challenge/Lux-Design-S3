@@ -2,7 +2,7 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Annotated, Dict, List
 
 import numpy as np
 from luxai_runner.bot import Bot
@@ -15,6 +15,7 @@ import tyro
 from dataclasses import dataclass, field
 from typing import Optional
 
+
 @dataclass
 class ReplayConfig:
     save_format: str = "json"
@@ -22,16 +23,17 @@ class ReplayConfig:
     compressed_obs: bool = True
     """Whether to save compressed observations or not. Compressed observations do not contain the full observation at each step. In particular, the map information is stored as the first observation, subsequent observations only store the changes that happened."""
 
+
 @dataclass
 class Args:
     players: tyro.conf.Positional[List[str]]
     """Paths to player modules. If --tournament is passed as well, you can also pass a folder and we will look through all sub-folders for valid agents with main.py files (only works for python agents at the moment)."""
     len: Optional[int] = 1000
     """Max episode length"""
-    output: Optional[str] = None
+    output: Annotated[Optional[str], tyro.conf.arg(aliases=["-o"])] = None
     """Where to output replays. Default is none and no replay is generated"""
-    replay: ReplayConfig = field(default_factory=lambda : ReplayConfig())
-    
+    replay: ReplayConfig = field(default_factory=lambda: ReplayConfig())
+
     verbose: int = 2
     """Verbose Level (0 = silent, 1 = (game-ending errors, debug logs from agents), 2 = warnings (non-game ending invalid actions), 3 = info (system info, unit collisions) )"""
     seed: Optional[int] = None
@@ -46,6 +48,7 @@ class Args:
     """The ranking system to use. Default is 'elo'. Can be 'elo', 'wins'."""
     # skip_validate_action_space: bool = False
     # """Set this for a small performance increase. Note that turning this on means the engine assumes your submitted actions are valid. If your actions are not well formatted there could be errors"""
+
 
 def main():
     args = tyro.cli(Args)
@@ -64,7 +67,9 @@ def main():
         np.random.seed(args.seed)
     cfg = EpisodeConfig(
         players=args.players,
-        env_cls=lambda **kwargs: RecordEpisode(LuxAIS3GymEnv(numpy_output=True), save_on_close=False),
+        env_cls=lambda **kwargs: RecordEpisode(
+            LuxAIS3GymEnv(numpy_output=True), save_on_close=False
+        ),
         seed=args.seed,
         env_cfg=dict(
             # verbose=args.verbose,
@@ -120,6 +125,7 @@ def main():
         etime = time.time()
         print("Time Elapsed: ", etime - stime)
         print("Rewards: ", results.rewards)
+
 
 if __name__ == "__main__":
     main()

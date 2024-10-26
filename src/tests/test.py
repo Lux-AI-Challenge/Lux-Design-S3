@@ -11,6 +11,7 @@ if __name__ == "__main__":
     import jax.numpy as jnp
 
     from luxai_s3.env import LuxAIS3Env
+
     # from luxai_s3.wrappers import RecordEpisode
 
     # Create the environment
@@ -32,8 +33,6 @@ if __name__ == "__main__":
         obs, state, reward, terminated, truncated, info = env.step(
             subkey, state, action, params=env_params
         )
-
-
 
     states = []
     actions = []
@@ -58,20 +57,17 @@ if __name__ == "__main__":
 
     save_start_time = time.time()
 
-
     states = serialize_env_states(states)
-    episode=dict(observations=states, actions=serialize_env_actions(actions))
+    episode = dict(observations=states, actions=serialize_env_actions(actions))
     episode["params"] = flax.serialization.to_state_dict(env_params)
-    episode["metadata"] = dict(
-        seed=0
-    )
-    
+    episode["metadata"] = dict(seed=0)
+
     # jax.random.PRNGKey(episode["seed"])
     # obs, state = env.reset(jax.random.wrap_key_data(episode["seed"]), params=env_params)
     with open("../lux-eye/src/pages/home/episode.json", "w") as f:
         json.dump(episode, f)
     save_end_time = time.time()
-    
+
     save_duration = save_end_time - save_start_time
     print(f"Time taken to save episode: {save_duration:.4f} seconds")
     # import ipdb; ipdb.set_trace()

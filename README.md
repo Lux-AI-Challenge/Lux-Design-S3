@@ -30,6 +30,19 @@ luxai-s3 path/to/bot/main.py path/to/bot/main.py --output replay.json
 
 Then upload the replay.json to the online visualizer here: https://s3vis.lux-ai.org/ (a link on the lux-ai.org website will be up soon) 
 
+## GPU Acceleration
+
+Jax will already provide some decent CPU based parallelization for batch running the environment. A GPU or TPU however can increase the environment throughput much more however.
+
+To install jax with GPU/TPU support, you can follow the instructions [here](https://jax.readthedocs.io/en/latest/installation.html).
+
+To benchmark your throughput speeds, you can run
+
+```
+pip install pynvml psutil
+python Lux-Design-S3/src/tests/benchmark_env.py -n 16384 -t 5 # 16384 envs, 5 trials each test
+```
+
 ### Starter Kits
 
 Each supported programming language/solution type has its own starter kit.
