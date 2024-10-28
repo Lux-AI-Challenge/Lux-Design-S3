@@ -337,7 +337,6 @@ class LuxAIS3Env(environment.Environment):
                             & (other_units_sapped_count[:, :, None] > 0),
                             all_units.energy[other_team_ids]
                             - params.unit_sap_cost
-                            * other_units_sapped_count[:, :, None],
                             all_units.energy[other_team_ids],
                         )
                     )
@@ -378,7 +377,6 @@ class LuxAIS3Env(environment.Environment):
                             - jnp.array(
                                 params.unit_sap_cost.astype(jnp.float32)
                                 * params.unit_sap_dropoff_factor
-                                * other_units_adjacent_sapped_count[:, :, None].astype(jnp.float32),
                                 dtype=jnp.int16,
                             ),
                             all_units.energy[other_team_ids],
