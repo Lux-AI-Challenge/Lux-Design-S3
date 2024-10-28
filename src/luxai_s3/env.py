@@ -320,7 +320,8 @@ class LuxAIS3Env(environment.Environment):
                 )
                 # the number of times other units are sapped
                 other_units_sapped_count = jnp.sum(
-                    jnp.all(
+                    team_unit_sapped[None, None, :]
+                    & jnp.all(
                         all_units.position[other_team_ids][:, :, None]
                         == team_sapped_positions[None],
                         axis=-1,
@@ -332,8 +333,7 @@ class LuxAIS3Env(environment.Environment):
                 all_units = all_units.replace(
                     energy=all_units.energy.at[other_team_ids].set(
                         jnp.where(
-                            team_unit_sapped[None, :, None]
-                            & other_team_unit_mask[:, :, None]
+                            other_team_unit_mask[:, :, None]
                             & (other_units_sapped_count[:, :, None] > 0),
                             all_units.energy[other_team_ids]
                             - params.unit_sap_cost
@@ -360,19 +360,19 @@ class LuxAIS3Env(environment.Environment):
                     team_sapped_positions[:, None, :] + adjacent_offsets
                 )  # (max_units, len(adjacent_offsets), 2)
                 other_units_adjacent_sapped_count = jnp.sum(
-                    jnp.all(
-                        all_units.position[other_team_ids][:, :, None]
+                    team_unit_sapped[None, None, :, None]
+                    & jnp.all(
+                        all_units.position[other_team_ids][:, :, None, None]
                         == team_sapped_adjacent_positions[None],
                         axis=-1,
                     ),
-                    axis=-1,
+                    axis=(-1, -2),
                     dtype=jnp.int16,
                 )  # (len(other_team_ids), max_units)
                 all_units = all_units.replace(
                     energy=all_units.energy.at[other_team_ids].set(
                         jnp.where(
-                            team_unit_sapped[None, :, None]
-                            & other_team_unit_mask[:, :, None]
+                            other_team_unit_mask[:, :, None]
                             & (other_units_adjacent_sapped_count[:, :, None] > 0),
                             all_units.energy[other_team_ids]
                             - jnp.array(
