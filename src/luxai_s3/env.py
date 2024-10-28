@@ -37,8 +37,7 @@ class LuxAIS3Env(environment.Environment):
     @property
     def default_params(self) -> EnvParams:
         params = EnvParams()
-        for k,v in params.__dict__.items():
-            params.__dict__[k] = jax.numpy.array(v)
+        params = jax.tree_map(jax.numpy.array, params)
         return params
 
     def compute_unit_counts_map(self, state: EnvState, params: EnvParams):
