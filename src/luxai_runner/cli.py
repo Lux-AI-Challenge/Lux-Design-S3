@@ -46,6 +46,8 @@ class Args:
     """Max concurrent number of episodes to run. Recommended to set no higher than the number of CPUs / 2"""
     tournament_cfg_ranking_system: str = "elo"
     """The ranking system to use. Default is 'elo'. Can be 'elo', 'wins'."""
+    tournament_cfg_max_episodes: Optional[int] = None
+    """Maximum number of episodes to play in tournament mode. None means unlimited."""
     # skip_validate_action_space: bool = False
     # """Set this for a small performance increase. Note that turning this on means the engine assumes your submitted actions are valid. If your actions are not well formatted there could be errors"""
 
@@ -109,6 +111,9 @@ def main():
         )
         tournament_config.ranking_system = getattr(
             args, "tournament_cfg_ranking_system"
+        )
+        tournament_config.max_episodes = getattr(
+            args, "tournament_cfg_max_episodes"
         )
         tourney = Tournament(
             cfg=tournament_config, episode_cfg=cfg  # the base/default episode config

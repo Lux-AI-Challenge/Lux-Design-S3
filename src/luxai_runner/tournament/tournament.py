@@ -23,6 +23,8 @@ class Tournament:
         self.episode_id = 0
         self.cfg = cfg
         self.eps_cfg = episode_cfg
+        self.max_episodes = cfg.max_episodes
+        self.episodes_played = 0
         min_agents = min(self.cfg.agents_per_episode)
         assert len(self.cfg.agents) >= min_agents
         assert episode_cfg is not None
@@ -60,6 +62,8 @@ class Tournament:
         async def _run_episode_cb(a):
             if a in episodes:
                 episodes.discard(a)
+            if self.max_episodes and self.episodes_played >= self.max_episodes:
+                return
             next_players = self.match_making_sys.next_match()
             eps_cfg = copy.deepcopy(self.eps_cfg)
             if self.eps_cfg.save_replay_path is not None:
@@ -73,6 +77,7 @@ class Tournament:
             for i in range(len(next_players)):
                 players[f"player_{i}"] = self.players[next_players[i]]
 
+            self.episodes_played += 1
             task = asyncio.Task(self._run_episode(players, eps_cfg))
             episodes.add(task)
             await task
@@ -83,7 +88,7 @@ class Tournament:
 
             line_length = 50
             line_length += len(self.ranking_sys._rank_headers())
-            while True:
+            while True and len(episodes) > 0:
                 import sys
                 import time
                 from collections import deque

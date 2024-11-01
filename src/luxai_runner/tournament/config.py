@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -15,3 +15,4 @@ class TournamentConfig:
     agents_per_episode: List[int] = field(default_factory=lambda: [2])
 
     max_concurrent_episodes: int = 4
+    max_episodes: Optional[int] = None
