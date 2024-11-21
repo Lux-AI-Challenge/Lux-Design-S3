@@ -667,7 +667,10 @@ class LuxAIS3Env(environment.Environment):
         new_energy_nodes = jnp.clip(
             state.energy_nodes + energy_node_deltas,
             min=jnp.array([0, 0], dtype=jnp.int16),
-            max=jnp.array([self.fixed_env_params.map_width, self.fixed_env_params.map_height], dtype=jnp.int16),
+            max=jnp.array(
+                [self.fixed_env_params.map_width - 1, self.fixed_env_params.map_height - 1],
+                dtype=jnp.int16
+            ),
         )
         new_energy_nodes = jnp.where(
             state.steps * params.energy_node_drift_speed % 1 == 0,
