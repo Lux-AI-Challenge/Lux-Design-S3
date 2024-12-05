@@ -3,29 +3,28 @@
 This is the folder for the Python kit. Please make sure to read the instructions as they are important regarding how you will write a bot and submit it to the competition. For those who need to know what python packages are available on the competition server, see [this](https://github.com/Lux-AI-Challenge/Lux-Design-S2/tree/main/kits/available_packages.txt)
 
 Make sure to check our [Discord](https://discord.gg/aWJt3UAcgn) for announcements if there are any breaking changes.
-<!--  or the [Kaggle forums](https://www.kaggle.com/c/lux-ai-season2/discussion)  -->
+ or the [Kaggle forums](https://www.kaggle.com/c/lux-ai-season-3/discussion) 
 ## Requirements
 
-You will need Python 3.9 or higher and NumPy installed (which should come with the dependencies you installed for the environment)
+You will need Python 3.9 or higher and NumPy installed (which should come with the dependencies you installed for the environment). To install the environment run
+
+```
+pip install --upgrade luxai-s3
+```
 
 ## Getting Started
 
-To get started, download this folder from this repository. Then make sure you install the luxai-s3 package via
-
-```
-git clone https://github.com/Lux-AI-Challenge/Lux-Design-S3/
-pip install -e Lux-Design-S3/src
-```
+To get started, download this folder from this repository.
 
 Your core agent code will go into `agent.py`, and you can create and use more files to help you as well. You should leave `main.py` alone as that code enables your agent to compete against other agents locally and on Kaggle.
 
 To quickly test run your agent, run
 
 ```
-luxai-s3 main.py main.py --output=replay.json
+luxai-s3 main.py main.py --output=replay.html
 ```
 
-This will run the `agent.py` code in the same folder as `main.py` and generate a replay file saved to `replay.json`.
+This will run the `agent.py` code in the same folder as `main.py` and generate a replay file saved to `replay.html` that you can open and watch.
 
 ## Developing
 Now that you have the code up and running, you are ready to start programming and having some fun!
