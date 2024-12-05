@@ -1,3 +1,4 @@
 *.egg-info/
 *episode.json
 episodes/
+dist/

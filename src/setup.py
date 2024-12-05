@@ -12,6 +12,4 @@ setup(
     entry_points={"console_scripts": ["luxai-s3 = luxai_runner.cli:main"]},
     author="Lux AI Challenge",
     description="Lux AI Challenge Season 3 environment code",
-    long_description=open("../README.md").read(),
-    long_description_content_type="text/markdown",
 )
