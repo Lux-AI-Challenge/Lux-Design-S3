@@ -6,7 +6,7 @@ import { isLuxAISEpisode, parseLuxAISEpisode } from './episode/luxai';
 import { Episode, Tile } from './episode/model';
 import { DisplayConfig } from './pages/visualizer/Board';
 
-const PRODUCTION_BASE_URL = 'https://s2vis.lux-ai.org';
+const PRODUCTION_BASE_URL = 'https://s3vis.lux-ai.org';
 
 export interface State {
   episode: Episode | null;
