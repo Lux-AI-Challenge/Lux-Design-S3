@@ -42,7 +42,7 @@ def agent(observation, configuration):
         t = Thread(target=enqueue_output, args=(agent_process.stderr, q_stderr))
         t.daemon = True
         t.start()
-    data = json.dumps(dict(obs=json.loads(observation.obs), step=observation.step, remainingOverageTime=observation.remainingOverageTime, player=observation.player, info=observation.info))
+    data = json.dumps(dict(obs=json.loads(observation.obs), step=observation.step, remainingOverageTime=observation.remainingOverageTime, player=observation.player, info=configuration))
     agent_process.stdin.write(f"{data}\n".encode())
     agent_process.stdin.flush()
 
