@@ -125,9 +125,9 @@ export function LoadFromElsewhere(): JSX.Element {
       <Text mb="xs">
         Supported inputs:
         <List>
-          <List.Item>Kaggle episode ids, like <a href="#" onClick={copyToInput}>46550729</a>.</List.Item>
-          <List.Item>Kaggle leaderboard URLs, like <a href="#" onClick={copyToInput}>https://www.kaggle.com/competitions/lux-ai-season-2/leaderboard?dialog=episodes-episode-46550729</a>.</List.Item>
-          <List.Item>URLs to JSON episode data, like <a href="#" onClick={copyToInput}>https://www.kaggleusercontent.com/episodes/46550729.json</a>.</List.Item>
+          <List.Item>Kaggle episode ids, like <a href="#" onClick={copyToInput}>58306841</a>.</List.Item>
+          <List.Item>Kaggle leaderboard URLs, like <a href="#" onClick={copyToInput}>https://www.kaggle.com/competitions/lux-ai-season-3/leaderboard?dialog=episodes-episode-58306841</a>.</List.Item>
+          <List.Item>URLs to JSON episode data, like <a href="#" onClick={copyToInput}>https://www.kaggleusercontent.com/episodes/58306841.json</a>.</List.Item>
         </List>
       </Text>
 

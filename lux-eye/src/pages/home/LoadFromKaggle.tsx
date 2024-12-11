@@ -7,7 +7,7 @@ export function LoadFromKaggle(): JSX.Element {
       {/* prettier-ignore */}
       <Text>
         Episodes can be loaded straight from Kaggle notebooks.
-        See the <a href="https://www.kaggle.com/code/jmerle/lux-eye-2022-integration" target="_blank" rel="noreferrer">Lux Eye 2022 integration</a> notebook for instructions.
+        See the <a href="https://www.kaggle.com/code/jmerle/lux-eye-s3-notebook-integration" target="_blank" rel="noreferrer">example notebook</a> for instructions.
       </Text>
     </HomeCard>
   );
