@@ -162,10 +162,8 @@ export const useStore = create(
         set({ loading: true, progress: 0 });
 
         const interestingPrefixes = [
-          'https://www.kaggle.com/competitions/lux-ai-2022-beta/leaderboard?dialog=episodes-episode-',
-          'https://www.kaggle.com/competitions/lux-ai-2022-beta/submissions?dialog=episodes-episode-',
-          'https://www.kaggle.com/competitions/lux-ai-season-2/leaderboard?dialog=episodes-episode-',
-          'https://www.kaggle.com/competitions/lux-ai-season-2/submissions?dialog=episodes-episode-',
+          'https://www.kaggle.com/competitions/lux-ai-season-3/leaderboard?dialog=episodes-episode-',
+          'https://www.kaggle.com/competitions/lux-ai-season-3/submissions?dialog=episodes-episode-',
         ];
 
         let url: string;
