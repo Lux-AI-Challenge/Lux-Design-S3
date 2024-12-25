@@ -108,7 +108,12 @@ function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step
     const [canvasX, canvasY] = tileToCanvas(config, { x: board.relicNodes[i][0], y: board.relicNodes[i][1] });
 
     ctx.fillStyle = 'orange';
-    ctx.fillRect(canvasX + config.tileSize / 4, canvasY + config.tileSize / 4, config.tileSize / 2, config.tileSize / 2);
+    ctx.fillRect(
+      canvasX + config.tileSize / 4,
+      canvasY + config.tileSize / 4,
+      config.tileSize / 2,
+      config.tileSize / 2,
+    );
     if (config.relicConfigs) {
       for (
         let dx = -Math.floor(envParams.relic_config_size / 2);
@@ -131,8 +136,16 @@ function drawTileBackgrounds(ctx: CanvasRenderingContext2D, config: Config, step
             ] != 0
           ) {
             const [canvasX, canvasY] = tileToCanvas(config, { x: nx, y: ny });
-            ctx.fillStyle = 'rgba(100, 100, 0, 0.1)';
-            ctx.fillRect(canvasX, canvasY, config.tileSize, config.tileSize);
+
+            ctx.strokeStyle = 'rgb(255, 200, 0)';
+            const padding = 2;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+              canvasX + padding,
+              canvasY + padding,
+              config.tileSize - padding * 2,
+              config.tileSize - padding * 2,
+            );
           }
         }
       }
