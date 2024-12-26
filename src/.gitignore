@@ -2,3 +2,4 @@
 *episode.json
 episodes/
 dist/
+tests/test_agents
