@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 import { isKaggleEnvironmentsEpisode, parseKaggleEnvironmentsEpisode } from './episode/kaggle-environments';
 import { isLuxAISEpisode, parseLuxAISEpisode } from './episode/luxai';
 import { Episode, Tile } from './episode/model';
-import { DisplayConfig } from './pages/visualizer/Board';
+import { DisplayConfig, FogOfWar } from './pages/visualizer/Board';
 
 const PRODUCTION_BASE_URL = 'https://s3vis.lux-ai.org';
 
@@ -59,6 +59,7 @@ export const useStore = create(
         sensorMask: true,
         energyField: false,
         relicConfigs: true,
+        fogOfWar: FogOfWar.Both,
       },
       minimalTheme: true,
 
@@ -236,6 +237,9 @@ export const useStore = create(
       },
       setDisplayConfig: (displayConfig: DisplayConfig) => {
         set({ displayConfig });
+      },
+      setFogOfWar: (fogOfWar: FogOfWar) => {
+        set(state => ({ displayConfig: { ...state.displayConfig, fogOfWar } }));
       },
     }),
     {
