@@ -59,7 +59,7 @@ export const useStore = create(
         sensorMask: true,
         energyField: false,
         relicConfigs: true,
-        fogOfWar: FogOfWar.Both,
+        fogOfWar: FogOfWar.None,
       },
       minimalTheme: true,
 
