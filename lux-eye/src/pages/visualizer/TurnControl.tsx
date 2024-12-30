@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Kbd, Slider, Stack, Table, Text } from '@mantine/core';
+import { ActionIcon, Button, Group, Kbd, Menu, Slider, Stack, Table, Text } from '@mantine/core';
 import { HotkeyItem, useElementSize, useHotkeys } from '@mantine/hooks';
 import { useModals } from '@mantine/modals';
 import {
@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getMatchIdx, parseTileType } from '../../episode/luxai';
 import { useStore } from '../../store';
+import { FogOfWar } from './Board';
 
 const SPEEDS = [0.5, 1, 2, 4, 8, 16, 32];
 
@@ -135,6 +136,16 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
     });
   }, [displayConfig]);
 
+  const setFogOfWar = useCallback(
+    (fogOfWar: FogOfWar) => {
+      setDisplayConfig({
+        ...displayConfig,
+        fogOfWar,
+      });
+    },
+    [displayConfig],
+  );
+
   const previousTurn = useCallback(() => {
     if (turn > 0 && !sliderRef.current?.contains(document.activeElement)) {
       setTurn(turn - 1);
@@ -247,11 +258,9 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
   const openJsonDataModal = useCallback(() => {
     modals.openModal({
-      title: 'This Game\'s Parameters',
+      title: "This Game's Parameters",
       size: 'auto',
-      children: (
-        <pre>{JSON.stringify(episode.params, null, 2)}</pre>
-      ),
+      children: <pre>{JSON.stringify(episode.params, null, 2)}</pre>,
     });
   }, [episode]);
 
@@ -334,6 +343,20 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
         <ActionIcon color="blue" variant="transparent" title="Show JSON data" onClick={openJsonDataModal}>
           <IconInfoCircle />
         </ActionIcon>
+        <Menu shadow="md" width={200}>
+          <Menu.Target>
+            <Button color="blue" variant={displayConfig.fogOfWar == FogOfWar.None ? 'outline' : 'filled'} size="xs">
+              FOW
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Label>Set Fog of War</Menu.Label>
+            <Menu.Item onClick={() => setFogOfWar(FogOfWar.None)}>None</Menu.Item>
+            <Menu.Item onClick={() => setFogOfWar(FogOfWar.Team1)}>Team 1</Menu.Item>
+            <Menu.Item onClick={() => setFogOfWar(FogOfWar.Team2)}>Team 2</Menu.Item>
+            <Menu.Item onClick={() => setFogOfWar(FogOfWar.Both)}>Both</Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
 
         <div style={{ marginRight: 'auto' }} />
 
@@ -355,15 +378,21 @@ export function TurnControl({ showHotkeysButton, showOpenButton }: TurnControlPr
 
       {selectedTile !== null && (
         <Group position="apart">
-          <Text>Tile Type: {parseTileType(step.board.tileType[selectedTile.x][selectedTile.y])} {step.board.energyNodes.find((val) => {
-            return val[0] == selectedTile.x && val[1] == selectedTile.y
-          }) && "(Energy Node)"} {step.board.relicNodes.find((val) => {
-            return val[0] == selectedTile.x && val[1] == selectedTile.y
-          }) && "(Relic Node)"}</Text>
-          
-          
+          <Text>
+            Tile Type: {parseTileType(step.board.tileType[selectedTile.x][selectedTile.y])}{' '}
+            {step.board.energyNodes.find(val => {
+              return val[0] == selectedTile.x && val[1] == selectedTile.y;
+            }) && '(Energy Node)'}{' '}
+            {step.board.relicNodes.find(val => {
+              return val[0] == selectedTile.x && val[1] == selectedTile.y;
+            }) && '(Relic Node)'}
+          </Text>
+
           <Text>Energy: {step.board.energy[selectedTile.x][selectedTile.y]}</Text>
-          <Text>Vision Power: {step.board.visionPowerMap[0][selectedTile.x][selectedTile.y]}, {step.board.visionPowerMap[1][selectedTile.x][selectedTile.y]}</Text>
+          <Text>
+            Vision Power: {step.board.visionPowerMap[0][selectedTile.x][selectedTile.y]},{' '}
+            {step.board.visionPowerMap[1][selectedTile.x][selectedTile.y]}
+          </Text>
         </Group>
       )}
 
