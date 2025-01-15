@@ -13,7 +13,8 @@ class Agent():
         self.relic_node_positions = []
         self.discovered_relic_nodes_ids = set()
         self.unit_explore_locations = dict()
-
+        self.exploring_units = []
+        
     def act(self, step: int, obs, remainingOverageTime: int = 60):
         """implement this function to decide what actions to send to each available unit. 
         
@@ -39,6 +40,25 @@ class Agent():
         # and information about where relic nodes are found are saved for the next match
         
         # save any new relic nodes that we discover for the rest of the game.
+
+        total_units = len(available_unit_ids)
+        if total_units >2:
+            num_explorers = total_units // 3
+        else:
+            num_explorers = 0
+
+        while len(self.exploring_units) < num_explorers:
+            # Filter units that are not already explorers
+            potential_explorers = [u for u in available_unit_ids if u not in self.exploring_units]
+            
+            # If no units are left to assign as explorers, break the loop
+            if not potential_explorers:
+                break
+
+            # Randomly assign one of the remaining units as a new explorer
+            new_explorer = np.random.choice(potential_explorers)
+            self.exploring_units.append(new_explorer)
+
         for id in visible_relic_node_ids:
             if id not in self.discovered_relic_nodes_ids:
                 self.discovered_relic_nodes_ids.add(id)
@@ -49,14 +69,41 @@ class Agent():
         for unit_id in available_unit_ids:
             unit_pos = unit_positions[unit_id]
             unit_energy = unit_energys[unit_id]
-            if len(self.relic_node_positions) > 0:
-                nearest_relic_node_position = self.relic_node_positions[0]
+            if unit_energy == 0:
+                actions[unit_id] = [0, 0, 0]
+
+            elif unit_id in self.exploring_units:
+                # Explore strategy
+                if step % 20 == 0 or unit_id not in self.unit_explore_locations:
+                    rand_loc = (np.random.randint(0, self.env_cfg["map_width"]),
+                                np.random.randint(0, self.env_cfg["map_height"]))
+                    self.unit_explore_locations[unit_id] = rand_loc
+                actions[unit_id] = [direction_to(unit_pos, self.unit_explore_locations[unit_id]), 0, 0]
+            
+            elif len(self.relic_node_positions) > 0:
+                nearest_relic_node_position = min(
+                        self.relic_node_positions,
+                        key=lambda relic_pos: abs(unit_pos[0] - relic_pos[0]) + abs(unit_pos[1] - relic_pos[1])
+                    )
                 manhattan_distance = abs(unit_pos[0] - nearest_relic_node_position[0]) + abs(unit_pos[1] - nearest_relic_node_position[1])
                 
                 # if close to the relic node we want to hover around it and hope to gain points
+
+                #Vishak
                 if manhattan_distance <= 4:
-                    random_direction = np.random.randint(0, 5)
+                    valid_directions = [0]  # Start with the center as always valid
+                    if unit_pos[1] > 0:  # Not in the top border
+                        valid_directions.append(1)  # Add "up"
+                    if unit_pos[0] < self.env_cfg["map_width"] - 1:  # Not in the right border
+                        valid_directions.append(2)  # Add "right"
+                    if unit_pos[1] < self.env_cfg["map_width"] - 1:  # Not in the bottom border
+                        valid_directions.append(3)  # Add "down"
+                    if unit_pos[0] > 0:  # Not in the left border
+                        valid_directions.append(4)  # Add "left"
+                    
+                    random_direction = np.random.choice(valid_directions)
                     actions[unit_id] = [random_direction, 0, 0]
+
                 else:
                     # otherwise we want to move towards the relic node
                     actions[unit_id] = [direction_to(unit_pos, nearest_relic_node_position), 0, 0]
