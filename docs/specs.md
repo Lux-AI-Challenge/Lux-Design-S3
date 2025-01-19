@@ -72,7 +72,7 @@ Generally sap actions are risky since a single miss means your ships lose energy
 
 A team's vision is the combined vision of all units on that team. Team vision is essentially a boolean mask / matrix over the 2D map indicating whether that tile's information is visible to the team. In this game, you can think of each unit having an "eye in the sky" sattelite that is capturing information about the units surroundings, but this sattelite has reduced accuracy the farther away the tile is from the unit.
 
-To determine which map tiles are visible to a team, we compute a vision power value for each tile on the map. For each unit on a team, we check each tile within the unit's sensor range and add `1 + params.unit_sensor_range - min(dx, dy)` to the vision power map at tile `(x+dx, y+dy)` where `(x,y)` is the unit's position and `(dx, dy)` is the offset from the unit's position and `abs(dx) <= params.unit_sensor_range` and `abs(dy) <= params.unit_sensor_range`.
+To determine which map tiles are visible to a team, we compute a vision power value for each tile on the map. For each unit on a team, we check each tile within the unit's sensor range and add `1 + params.unit_sensor_range - max(dx, dy)` to the vision power map at tile `(x+dx, y+dy)` where `(x,y)` is the unit's position and `(dx, dy)` is the offset from the unit's position and `abs(dx) <= params.unit_sensor_range` and `abs(dy) <= params.unit_sensor_range`.
 
 Nebula tiles have a vision reduction value of `params.nebula_tile_vision_reduction`. This number is reduced from every tile's vision power if that tile is a nebula tile.
 
@@ -116,7 +116,7 @@ To win a match, the team must have gained more relic points than the other team 
 At each time step of a match, we run the following steps in order:
 1. Move all units that have enough energy to move
 2. Execute the sap actions of all units that have enough energy to do so
-3. Resolve collisions and apply energy void fields
+3. Resolve collisions and apply energy void fields. This runs simultaneously with step 2 based on energy of units after step 1.
 4. Update the energy of all units based on their position (energy fields and nebula tiles)
 5. Spawn units for all teams. Remove units that have less than 0 energy.
 6. Determine the team vision / sensor masks for all teams and mask out observations accordingly
@@ -135,19 +135,18 @@ There are a number of randomized game paramteres which can modify and even disab
 
 ```python
 env_params_ranges = dict(
-    map_type=[1],
     unit_move_cost=list(range(1, 6)), # list(range(x, y)) = [x, x+1, x+2, ... , y-1]
-    unit_sensor_range=list(range(2, 5)),
-    nebula_tile_vision_reduction=list(range(0,4)),
-    nebula_tile_energy_reduction=[0, 0, 10, 25],
+    unit_sensor_range=[1, 2, 3, 4],
+    nebula_tile_vision_reduction=list(range(0, 8)),
+    nebula_tile_energy_reduction=[0, 1, 2, 3, 5, 25],
     unit_sap_cost=list(range(30, 51)),
     unit_sap_range=list(range(3, 8)),
     unit_sap_dropoff_factor=[0.25, 0.5, 1],
     unit_energy_void_factor=[0.0625, 0.125, 0.25, 0.375],
     # map randomizations
-    nebula_tile_drift_speed=[-0.05, -0.025, 0.025, 0.05],
+    nebula_tile_drift_speed=[-0.15, -0.1, -0.05, -0.025, 0.025, 0.05, 0.1, 0.15],
     energy_node_drift_speed=[0.01, 0.02, 0.03, 0.04, 0.05],
-    energy_node_drift_magnitude=list(range(3, 6))
+    energy_node_drift_magnitude=list(range(3, 6)),
 )
 ```
 
