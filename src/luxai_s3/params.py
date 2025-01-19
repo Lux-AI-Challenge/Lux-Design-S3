@@ -46,6 +46,7 @@ class EnvParams:
     min_energy_per_tile: int = -20
 
     max_relic_nodes: int = 6
+    """max relic nodes in the entire map. This number should be tuned carefully as relic node spawning code is hardcoded against this number 6"""
     relic_config_size: int = 5
     fog_of_war: bool = True
     """

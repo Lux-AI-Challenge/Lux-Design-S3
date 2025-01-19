@@ -11,7 +11,7 @@ Seeking to learn more about the secrets of the universe, new expeditions of ship
 
 ## Environment
 
-In the Lux AI Challenge Season 3, two teams compete against each other on a 2D map in a best of 5 match sequence (called a game) with each match lasting 100 time steps. Both teams have a pool of units they can control to gain points around the map while also trying to prevent the other team from doing the same.
+In the Lux AI Challenge Season 3, two teams compete against each other on a 2D map in a best of 5 match sequence (called a game) with each match lasting 100 match time steps. Both teams have a pool of units they can control to gain points around the map while also trying to prevent the other team from doing the same.
 
 Unique to Season 3 is how various game mechanics and parameters are randomized at the start of each game and remain the same between matches in one game. Some mechanics/paramters include the map terrain/generation, how much units can see on the map, how might they be blocked by map features, etc. Each match is played with fog of war, where each team can only see what their own units can see, with everything else being hidden. Given that some mechanics are randomized between games, the specs will clearly document how they are randomized and what the possible values are. There is also a summary table of every game parameter that is randomized between games in the [Game Parameters](#game-parameters) section.
 
@@ -42,9 +42,11 @@ Energy nodes are mysterious objects that emit energy fields which can be harvest
 
 ### Relic Nodes
 
-Relic nodes are objects in space that enable ships to go near it to gain team points. These relic nodes however are ancient and thus fragmented. As a result, only certain tiles near the relic nodes when a friendly ship is on it will gain points. The tiles that yield points are always hidden and can only be discovered by trial and error by moving around the relic nodes. Relic node positions themselves can be observed if withins sensor range. The tiles around relic nodes can overlap with tiles of other relic nodes but will not yield extra points if that occurs and is treated as one tile.
+Relic nodes are objects in space that enable ships to go near it to gain team points. These relic nodes however are ancient and thus fragmented. As a result, only certain tiles near the relic nodes when a friendly ship is on it will gain points. The tiles that yield points are always hidden and can only be discovered by trial and error by moving around the relic nodes. Relic node positions themselves can be observed if they are within sensor range. The tiles around relic nodes can overlap with tiles of other relic nodes but will not yield extra points if that occurs and is treated as one tile.
 
 In code, a random 5x5 configuration / mask centered on the relic node is generated indicating which tiles yield points and which don't. Multiple ships can stack on one tile but will only yield at most one point per tile. Note that ship stacking can be risky due to the [sapping action](#sap-actions).
+
+At the start of the game a number `k` from 1 to 3 is sampled which is the max number of relic nodes that can be in each half of the map. Relic nodes are then spawned over time in the first `k` matches of the 5 the match sequence. In each of the `k` matches one relic node is spawned on both halves of the map at some match timestep from 0 to 50. This means you may need to re-explore seen parts of the map to find potentially new relic nodes in the first half of the 5 match game.
 
 ## Units
 
