@@ -276,7 +276,7 @@ def gen_map(key: chex.PRNGKey, params: EnvParams, map_type: int, map_height: int
         flat_indices = jnp.argsort(noise.ravel())[-max_relic_nodes // 2:]  # Get indices of two highest values
         highest_positions = jnp.column_stack(jnp.unravel_index(flat_indices, noise.shape))
 
-        # relic nodes have a fixed density of 25% nearby tiles can yield points
+        # relic nodes have a fixed density of 20% nearby tiles can yield points
         relic_node_configs = (
             jax.random.randint(
                 key,
