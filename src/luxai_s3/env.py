@@ -148,6 +148,11 @@ class LuxAIS3Env(environment.Environment):
                     i : max_sensor_range * 2 + 1 - i,
                     i : max_sensor_range * 2 + 1 - i,
                 ].set(val)
+            # vision of position at center of update has an extra 10
+            update = update.at[
+                max_sensor_range,
+                max_sensor_range,
+            ].add(10)
             vision_power_map = jax.lax.dynamic_update_slice(
                 vision_power_map,
                 update=update + existing_vision_power,
