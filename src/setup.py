@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="luxai-s3",
-    version="0.1.1",
+    version="0.2.0",
     packages=find_packages(exclude="kits"),
     install_requires=[
         "jax",
