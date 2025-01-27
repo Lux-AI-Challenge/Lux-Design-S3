@@ -641,8 +641,6 @@ class LuxAIS3Env(environment.Environment):
             spawn_units_in, lambda: spawn_team_units(state), lambda: state
         )
 
-        state = self.compute_sensor_masks(state, params)
-
         # Shift objects around in space
         # Move the nebula tiles in state.map_features.tile_types up by 1 and to the right by 1
         # this is also symmetric nebula tile movement
@@ -691,6 +689,8 @@ class LuxAIS3Env(environment.Environment):
             map_features=state.map_features.replace(tile_type=new_tile_types_map),
             energy_nodes=new_energy_nodes,
         )
+
+        state = self.compute_sensor_masks(state, params)
 
         # Compute relic scores
         def team_relic_score(unit_counts_map):
