@@ -25,7 +25,7 @@ class LuxAIS3GymEnv(gym.Env):
 
         low = np.zeros((self.env_params.max_units, 3))
         low[:, 1:] = -self.env_params.unit_sap_range
-        high = np.ones((self.env_params.max_units, 3)) * 6
+        high = np.ones((self.env_params.max_units, 3)) * 5
         high[:, 1:] = self.env_params.unit_sap_range
         self.action_space = gym.spaces.Dict(
             dict(
