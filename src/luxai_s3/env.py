@@ -921,7 +921,7 @@ class LuxAIS3Env(environment.Environment):
         """Action space of the environment."""
         low = np.zeros((self.fixed_env_params.max_units, 3))
         low[:, 1:] = -env_params_ranges["unit_sap_range"][-1]
-        high = np.ones((self.fixed_env_params.max_units, 3)) * 6
+        high = np.ones((self.fixed_env_params.max_units, 3)) * 5
         high[:, 1:] = env_params_ranges["unit_sap_range"][-1]
         return spaces.Dict(
             dict(player_0=MultiDiscrete(low, high), player_1=MultiDiscrete(low, high))
