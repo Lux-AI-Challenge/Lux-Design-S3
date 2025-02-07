@@ -802,17 +802,11 @@ class LuxAIS3Env(environment.Environment):
         done = terminated | truncated
         
         if self.auto_reset:
-            obs_re, state_re = self.reset_env(key_reset, params)
-            # Use lax.cond to efficiently choose between obs_re and obs_st
-            obs = jax.lax.cond(
+            # Reset the env only if done to avoid generating new state every step
+            obs, state = jax.lax.cond(
                 done,
-                lambda: obs_re,
-                lambda: obs_st
-            )
-            state = jax.lax.cond(
-                done,
-                lambda: state_re,
-                lambda: state_st
+                lambda: self.reset_env(key_reset, params),
+                lambda: (obs_st, state_st),
             )
         else:
             obs = obs_st
